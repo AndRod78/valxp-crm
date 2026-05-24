@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>VALXP CRM Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Teko:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Familjen+Grotesk:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#f5f3ef; --surface:#ffffff; --surface2:#faf9f6;
+  --border:#e2ddd6; --border2:#ccc6bc;
+  --text:#1a1714; --muted:#7a7268; --muted2:#b0a99f;
+  --accent:#c8401a; --accent2:#e85d2f; --accent-bg:#fff1ed;
+  --c1:#c8401a; --c2:#d4882a; --c3:#3a8c6e; --c4:#3d6fb5; --c5:#8a7a6e;
+  --cats0:#c8401a; --cats1:#3d6fb5; --cats2:#3a8c6e; --cats3:#9b59b6;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:14px;}
+body{background:var(--bg);color:var(--text);font-family:'Familjen Grotesk',sans-serif;min-height:100vh;}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--text);color:#f5f3ef;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;height:52px;position:sticky;top:0;z-index:100;
+}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent2);}
+.brand-name{font-size:14px;font-weight:700;letter-spacing:.2px;}
+.brand-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#9c9186;letter-spacing:.6px;text-transform:uppercase;margin-top:1px;}
+.topbar-meta{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6b6158;text-align:right;line-height:1.7;}
+.topbar-meta b{color:#c8a68a;}
+
+/* ── TABS ── */
+.tabbar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:0;padding:0 28px;
+  position:sticky;top:52px;z-index:99;
+}
+.tab{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.5px;text-transform:uppercase;
+  padding:14px 18px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;
+  transition:all .18s;white-space:nowrap;
+}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500;}
+
+/* ── LAYOUT ── */
+.page{display:none;padding:24px 28px;max-width:1340px;margin:0 auto;animation:fadein .25s ease;}
+.page.active{display:block;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── FILTER BAR ── */
+.fbar{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:14px 18px;margin-bottom:20px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.fbar-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.fchip{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.3px;
+  padding:5px 11px;border-radius:100px;border:1px solid var(--border2);
+  background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.fchip:hover,.fchip.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.fsep{width:1px;height:20px;background:var(--border);flex-shrink:0;}
+select.fsel{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;padding:5px 10px;
+  border:1px solid var(--border2);border-radius:4px;background:var(--surface2);
+  color:var(--text);cursor:pointer;
+}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.kpi{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:18px 20px;position:relative;overflow:hidden;
+}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--c);}
+.kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--muted);}
+.kpi-val{font-size:26px;font-weight:700;margin:6px 0 2px;letter-spacing:-1px;color:var(--c);}
+.kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted2);}
+
+/* ── PANELS ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid-60-40{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:16px;}
+.grid-40-60{display:grid;grid-template-columns:1fr 1.5fr;gap:16px;margin-bottom:16px;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;}
+.ptitle{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:7px;
+}
+.ptitle::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--accent);display:inline-block;}
+.ptitle-big{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.2px;margin-bottom:4px;}
+.ptitle-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);}
+
+/* ── SVG / D3 ── */
+.axis-x path,.axis-x line,.axis-y path,.axis-y line{stroke:var(--border);}
+.axis-x text,.axis-y text{fill:var(--muted);font-size:9px;font-family:'IBM Plex Mono',monospace;}
+.grid-line{stroke:var(--border);stroke-dasharray:3,4;}
+
+/* ── BAR CHARTS (CSS) ── */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.bar-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  min-width:0;flex:0 0 210px;color:var(--text);}
+.bar-track{flex:1;background:var(--border);border-radius:100px;height:8px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:100px;transition:width 1s cubic-bezier(.16,1,.3,1);}
+.bar-amt{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);
+  white-space:nowrap;flex:0 0 100px;text-align:right;}
+.bar-name-sm{flex:0 0 180px;font-size:10px;}
+.bar-name-lg{flex:0 0 260px;}
+
+/* ── SEGMENT CARDS ── */
+.seg-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;}
+.seg-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:16px;position:relative;overflow:hidden;cursor:pointer;transition:border-color .18s;
+}
+.seg-card:hover{border-color:var(--c);}
+.seg-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--c);}
+.seg-card .sc-num{font-size:28px;font-weight:700;color:var(--c);letter-spacing:-1px;}
+.seg-card .sc-lbl{font-size:11px;font-weight:600;margin:3px 0 2px;line-height:1.3;}
+.seg-card .sc-score{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);}
+.seg-card .sc-pct{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted2);margin-top:4px;}
+
+/* ── TABLE ── */
+.tscroll{overflow:auto;max-height:360px;}
+.tscroll2{overflow:auto;max-height:440px;}
+table.dtable{width:100%;border-collapse:collapse;font-size:11px;}
+table.dtable th{
+  font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--border);
+  text-align:left;position:sticky;top:0;background:var(--surface);white-space:nowrap;
+}
+table.dtable td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);}
+table.dtable tr:last-child td{border-bottom:none;}
+table.dtable tr:hover td{background:var(--surface2);}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:8px;font-weight:700;letter-spacing:.3px;}
+.num{text-align:right;}
+.right{text-align:right;}
+
+/* ── TOOLTIP ── */
+.tooltip{
+  position:fixed;pointer-events:none;
+  background:var(--text);color:#f5f3ef;
+  border-radius:6px;padding:10px 14px;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.8;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:999;opacity:0;
+  transition:opacity .12s;max-width:240px;
+}
+.tt-name{font-family:'Familjen Grotesk',sans-serif;font-size:12px;font-weight:700;margin-bottom:3px;}
+
+/* ── SCATTER ── */
+.dot-pt{cursor:pointer;transition:opacity .12s;}
+.dot-pt:hover{opacity:1!important;}
+
+/* ── LEGEND ── */
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;cursor:pointer;}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+/* ── STAT PILLS ── */
+.stat-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.stat-pill{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:8px 14px;font-family:'IBM Plex Mono',monospace;font-size:9px;
+  display:flex;flex-direction:column;gap:2px;
+}
+.stat-pill b{font-size:16px;font-weight:700;color:var(--text);font-family:'Familjen Grotesk',sans-serif;letter-spacing:-.5px;}
+
+/* ── DESCRIPTIVE BLOCK ── */
+.desc-box{
+  background:var(--accent-bg);border:1px solid #f5cfc4;border-radius:8px;
+  padding:14px 18px;margin-bottom:16px;font-size:11px;line-height:1.7;color:#6b3020;
+}
+.desc-box strong{color:var(--accent);}
+
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .grid2,.grid-60-40,.grid-40-60{grid-template-columns:1fr;}
+  .seg-cards{grid-template-columns:repeat(2,1fr);}
+  .page{padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand" style="display:flex;align-items:center;gap:10px;padding:0;">
+    <span style="
+      font-family:'Cinzel',serif;
+      font-weight:900;
+      font-size:22px;
+      letter-spacing:0.12em;
+      color:#F0C040;
+      text-shadow:0 0 18px rgba(240,192,64,0.35);
+      line-height:1;
+      white-space:nowrap;
+    ">VALXP</span>
+    <div style="width:1px;height:22px;background:rgba(240,192,64,0.25);flex-shrink:0;"></div>
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(240,192,64,0.55);line-height:1;">CRM Intelligence Dashboard</div>
+    </div>
+  </div>
+  <div class="topbar-meta">
+    Período: <b>Ene 2022 — Feb 2026</b> &nbsp;|&nbsp;
+    Clientes: <b>380</b> &nbsp;|&nbsp;
+    Registros: <b>2,165</b>
+  </div>
+</div>
+
+<div class="tabbar">
+  <div class="tab active" data-tab="resumen">📊 Resumen General</div>
+  <div class="tab" data-tab="ventas">📈 Ventas & Tendencia</div>
+  <div class="tab" data-tab="categorias">🗂 Categorías</div>
+  <div class="tab" data-tab="productos">📦 Productos</div>
+  <div class="tab" data-tab="clientes">🏢 Clientes</div>
+  <div class="tab" data-tab="rfm">🎯 Segmentación RFM</div>
+  <div class="tab" data-tab="funnel">🔻 Funnel 4C's + 2R's</div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TAB 1 · RESUMEN
+════════════════════════════════════════════════════════════════════════ -->
+<div class="page active" id="tab-resumen">
+  <div class="desc-box">
+    <strong>VALXP</strong> — Análisis CRM basado en <strong>2,165 transacciones</strong>
+    de <strong>380 clientes</strong> entre enero de 2022 y febrero de 2026.
+    Comprende 4 líneas de negocio: Prendas Publicitarias, Dotaciones Industriales, Dotaciones Administrativas y Dotaciones Médicas.
+  </div>
+  <div class="kpi-grid" id="kpi-resumen"></div>
+  <div class="grid-60-40">
+    <div class="panel">
+      <div class="ptitle">Evolución de ventas por año</div>
+      <svg id="chart-trend-resumen" width="100%"></svg>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Participación por categoría</div>
+      <svg id="chart-donut" width="100%" height="220"></svg>
+      <div class="legend" id="legend-donut"></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="ptitle">Top 10 productos por ventas</div>
+      <div id="bars-top-prods-resumen"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Top 10 clientes por ventas</div>
+      <div id="bars-top-cli-resumen"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TAB 2 · VENTAS
+════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="tab-ventas">
+  <div class="fbar" id="fbar-ventas">
+    <span class="fbar-label">Año:</span>
+  </div>
+  <div class="kpi-grid" id="kpi-ventas"></div>
+  <div class="panel">
+    <div class="ptitle">Ventas anuales — Valor bruto acumulado</div>
+    <svg id="chart-trend-ventas" width="100%"></svg>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="ptitle">Ventas por categoría (año seleccionado)</div>
+      <div id="bars-cat-ventas"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Tabla resumen por año</div>
+      <div class="tscroll">
+        <table class="dtable" id="table-ventas"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TAB 3 · CATEGORÍAS
+════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="tab-categorias">
+  <div class="fbar" id="fbar-cat">
+    <span class="fbar-label">Categoría:</span>
+  </div>
+  <div class="kpi-grid" id="kpi-cat"></div>
+  <div class="grid-60-40">
+    <div class="panel">
+      <div class="ptitle">Evolución de ventas por categoría y año</div>
+      <svg id="chart-cat-trend" width="100%"></svg>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Distribución de ventas</div>
+      <div id="bars-cat-dist"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">Matriz categoría × año (ventas)</div>
+    <div class="tscroll"><table class="dtable" id="table-cat-matrix"></table></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TAB 4 · PRODUCTOS
+════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="tab-productos">
+  <div class="fbar" id="fbar-prod">
+    <span class="fbar-label">Categoría:</span>
+  </div>
+  <div class="desc-box" id="desc-prod"></div>
+  <div class="grid-60-40">
+    <div class="panel">
+      <div class="ptitle">Top 20 productos por valor de ventas</div>
+      <div id="bars-prods"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Top 20 productos por cantidad vendida</div>
+      <div id="bars-prods-qty"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TAB 5 · CLIENTES
+════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="tab-clientes">
+  <div class="fbar" id="fbar-cli">
+    <span class="fbar-label">Año:</span>
+  </div>
+  <div class="kpi-grid" id="kpi-cli"></div>
+  <div class="grid-60-40">
+    <div class="panel">
+      <div class="ptitle">Top 20 clientes por ventas acumuladas</div>
+      <div id="bars-clientes"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Segmento RFM de top clientes</div>
+      <div id="cli-rfm-dist"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">Directorio de clientes</div>
+    <div class="tscroll2"><table class="dtable" id="table-clientes"></table></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TAB 6 · RFM
+════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="tab-rfm">
+  <div class="fbar" id="fbar-rfm">
+    <span class="fbar-label">Segmento:</span>
+  </div>
+  <div class="seg-cards" id="seg-cards"></div>
+  <div class="grid-60-40">
+    <div class="panel">
+      <div class="ptitle">Mapa de dispersión — Score R vs F (tamaño = Score M)</div>
+      <div id="scatter-wrap"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Distribución por segmento</div>
+      <div id="bars-rfm"></div>
+      <div style="margin-top:18px;">
+        <div class="ptitle">Tabla de promedios RFM</div>
+        <div class="tscroll"><table class="dtable" id="table-rfm-stats"></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ptitle" id="rfm-list-title">Lista de clientes por segmento</div>
+    <div class="tscroll2"><table class="dtable" id="table-rfm-clients"></table></div>
+  </div>
+</div>
+
+<script>
+const D = {"kpis": {"total_ventas": 5720904633.6, "total_qty": 378753, "total_clientes": 380, "total_tx": 2165, "years": [2022, 2023, 2024, 2025, 2026]}, "trend": [{"anio": 2022, "ventas": 1293729603.21, "cantidad": 118521, "clientes": 170, "transacciones": 576}, {"anio": 2023, "ventas": 1365166844.88, "cantidad": 111101, "clientes": 169, "transacciones": 509}, {"anio": 2024, "ventas": 1388145996.26, "cantidad": 78250, "clientes": 170, "transacciones": 537}, {"anio": 2025, "ventas": 1587681065.26, "cantidad": 67768, "clientes": 151, "transacciones": 494}, {"anio": 2026, "ventas": 86181123.99, "cantidad": 3113, "clientes": 27, "transacciones": 49}], "categorias": ["Dotaciones Administrativas Uniformes", "Dotaciones Industriales - Uniformes", "Dotaciones Médicas y hospitalarias, Uniformes", "Prendas Publicitarias"], "ventas_cat": {"Dotaciones Administrativas Uniformes": {"ventas": 1770892482.49, "cantidad": 43493, "clientes": 142}, "Dotaciones Industriales - Uniformes": {"ventas": 1561652421.63, "cantidad": 47418, "clientes": 192}, "Dotaciones Médicas y hospitalarias, Uniformes": {"ventas": 753441789.17, "cantidad": 33540, "clientes": 206}, "Prendas Publicitarias": {"ventas": 1634917940.31, "cantidad": 254302, "clientes": 229}}, "cat_year_matrix": [{"categoria": "Dotaciones Administrativas Uniformes", "2022": 355157015.73, "2023": 369163412.68, "2024": 427426897.88, "2025": 594704156.2, "2026": 24441000.0, "total": 1770892482.49}, {"categoria": "Dotaciones Industriales - Uniformes", "2022": 250336647.98, "2023": 265698684.55, "2024": 484275781.97, "2025": 540699924.78, "2026": 20641382.35, "total": 1561652421.63}, {"categoria": "Dotaciones Médicas y hospitalarias, Uniformes", "2022": 154748954.15, "2023": 150738131.86, "2024": 222682823.82, "2025": 191965879.34, "2026": 33306000.0, "total": 753441789.17}, {"categoria": "Prendas Publicitarias", "2022": 533486985.35, "2023": 579566615.79, "2024": 253760492.59, "2025": 260311104.94, "2026": 7792741.64, "total": 1634917940.31}], "top_prods": [{"producto": "CAMIBUSO TIPO POLO", "ventas": 646382719.56, "cantidad": 22817, "categoria": "Dotaciones Médicas y hospitalarias, Uniformes"}, {"producto": "CACHUCHAS", "ventas": 419772500.3000001, "cantidad": 38837, "categoria": "Prendas Publicitarias"}, {"producto": "PANTALON LINO", "ventas": 366741121.26, "cantidad": 10352, "categoria": "Dotaciones Administrativas Uniformes"}, {"producto": "JEAN CLSICO INDUSTRIAL", "ventas": 366248678.8, "cantidad": 11919, "categoria": "Dotaciones Industriales - Uniformes"}, {"producto": "CAMISA POPELINA", "ventas": 344287211.74, "cantidad": 7388, "categoria": "Dotaciones Administrativas Uniformes"}, {"producto": "CAMISA EN DRIL MANGA LARGA", "ventas": 269648740.0, "cantidad": 7358, "categoria": "Dotaciones Industriales - Uniformes"}, {"producto": "CHAQUETA", "ventas": 245799867.14999998, "cantidad": 3937, "categoria": "Dotaciones Administrativas Uniformes"}, {"producto": "CAMISETA   ESTAMPADA", "ventas": 231180491.89999998, "cantidad": 16197, "categoria": "Prendas Publicitarias"}, {"producto": "PONCHOS", "ventas": 218511446.1, "cantidad": 24183, "categoria": "Prendas Publicitarias"}, {"producto": "UNIFORME", "ventas": 206570649.87, "cantidad": 2087, "categoria": "Dotaciones Industriales - Uniformes"}, {"producto": "CAMISA EN OXFORD", "ventas": 131988465.32, "cantidad": 3486, "categoria": "Dotaciones Administrativas Uniformes"}, {"producto": "PANTALON CLASICO", "ventas": 114430337.96000001, "cantidad": 2488, "categoria": "Dotaciones Administrativas Uniformes"}, {"producto": "CHALECO", "ventas": 103789518.95, "cantidad": 2263, "categoria": "Dotaciones Industriales - Uniformes"}, {"producto": "JEAN CLASICO PROCESADO", "ventas": 98430799.92, "cantidad": 2768, "categoria": "Dotaciones Industriales - Uniformes"}, {"producto": "CAMISA TELA LAFAYETTE", "ventas": 98198986.0, "cantidad": 1686, "categoria": "Dotaciones Administrativas Uniformes"}, {"producto": "KIT UNIFORME", "ventas": 94453200.0, "cantidad": 2424, "categoria": "Dotaciones Industriales - Uniformes"}, {"producto": "SUDADERA", "ventas": 90745292.46000001, "cantidad": 3056, "categoria": "Prendas Publicitarias"}, {"producto": "OVEROLES EN DRIL  BORDADO", "ventas": 86722000.0, "cantidad": 1346, "categoria": "Dotaciones Industriales - Uniformes"}, {"producto": "CAMISA EN LINO MANGA LARGA", "ventas": 83428200.0, "cantidad": 3020, "categoria": "Dotaciones Administrativas Uniformes"}, {"producto": "RABOEGALLOS", "ventas": 67976016.0, "cantidad": 31281, "categoria": "Prendas Publicitarias"}], "top_clientes": [{"cliente": "COOPERATIVA ANDINA LTDA.", "ventas": 823009940.95, "cantidad": 21474}, {"cliente": "DISTRIBUIDORA PRAXIS BEBIDAS S.A.", "ventas": 558335100.0, "cantidad": 85781}, {"cliente": "INVERSIONES SIERRA LOGÍSTICA E.S.P.", "ventas": 552435588.24, "cantidad": 16668}, {"cliente": "IMPRESIONES VERSA LTDA.", "ventas": 286210737.44, "cantidad": 28166}, {"cliente": "ASOCIACIÓN CIVILES ORIENTE", "ventas": 204348882.36, "cantidad": 1880}, {"cliente": "CONSULTORA VITA AGROINDUSTRIAL LTDA.", "ventas": 202778864.55, "cantidad": 10689}, {"cliente": "PROCESADORA AGRÍCOLA APEX S.A.S.", "ventas": 147073768.0, "cantidad": 8429}, {"cliente": "VALORE PROJECTS S.A.", "ventas": 145859400.0, "cantidad": 4110}, {"cliente": "DISTRIBUIDORA PUNTO ALIMENTARIA LTDA.", "ventas": 132763500.0, "cantidad": 3258}, {"cliente": "CENTRO PACÍFICO S.A.S", "ventas": 130279000.0, "cantidad": 5505}, {"cliente": "INDUSTRIAS ANDES MÉDICA S.A.S.", "ventas": 122308332.12, "cantidad": 20385}, {"cliente": "DISTRIBUIDORA SIERRA LOGÍSTICA LTDA.", "ventas": 107380600.0, "cantidad": 21134}, {"cliente": "UNIVERSIDAD NUEVA DEL VALLE", "ventas": 99797500.0, "cantidad": 5290}, {"cliente": "INDUSTRIAS VALORE ALIMENTARIA LTDA.", "ventas": 93791400.0, "cantidad": 14002}, {"cliente": "DISTRIBUIDORA AVANCE LICORES S.A.", "ventas": 87629000.0, "cantidad": 7992}, {"cliente": "FUERZA PARTNERS S.A.S", "ventas": 74499506.23, "cantidad": 2319}, {"cliente": "ANDINA CARIBE MINERA E.S.P.", "ventas": 57973000.0, "cantidad": 2672}, {"cliente": "STRATA SERVICES S.A.S.", "ventas": 50605000.0, "cantidad": 2287}, {"cliente": "AUTOMOTRIZ SUR LTDA.", "ventas": 48649200.0, "cantidad": 7418}, {"cliente": "GANADERA ACTIVA S.A.S.", "ventas": 48124000.0, "cantidad": 4593}, {"cliente": "CONSTRUCTORA CORDIAL PROYECTOS S.A.", "ventas": 47307986.54, "cantidad": 1628}, {"cliente": "DISTRIBUIDORA CLAVE S.A.S", "ventas": 45587100.0, "cantidad": 1227}, {"cliente": "ANDINA NORTE TEXTIL S.A.", "ventas": 45186000.0, "cantidad": 1446}, {"cliente": "COOPERATIVA REGIONAL ", "ventas": 44092100.0, "cantidad": 1152}, {"cliente": "GANADERA FUERZA S.A.S.", "ventas": 40090600.0, "cantidad": 1357}, {"cliente": "CENTRO VITA ALIMENTARIA LTDA.", "ventas": 39504228.0, "cantidad": 2081}, {"cliente": "TECNOLOGÍA ORIENTE LTDA.", "ventas": 38653000.0, "cantidad": 1111}, {"cliente": "HOSPITAL CENTRAL ", "ventas": 34443000.0, "cantidad": 627}, {"cliente": "CONSTRUCTORA AVANCE AGROINDUSTRIAL S.A.S.", "ventas": 34382500.0, "cantidad": 1211}, {"cliente": "VALORE LOGISTICS S.A.", "ventas": 33189600.0, "cantidad": 1486}], "rfm": [{"cliente": "COOPERATIVA DEL CAMPO LTDA.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "IMPRESIONES VERSA LTDA.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "GANADERA FUERZA S.A.S.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "GRÁFICA TRIPLE LTDA.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "CONSULTORA ALFA COMERCIAL S.A.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "DISTRIBUIDORA PUNTO ALIMENTARIA LTDA.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "INVERSIONES FUERZA LOGÍSTICA E.S.P.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "INVERSIONES SIERRA LOGÍSTICA E.S.P.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "DISTRIBUIDORA CLAVE S.A.S", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "DISTRIBUIDORA BRILLO INTEGRAL S.A.S.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "CONSTRUCTORA CORDIAL PROYECTOS S.A.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "INDUSTRIAS ANDES MÉDICA S.A.S.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "ANDES SOLUTIONS S.A.S", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "AUTOMOTRIZ SUR LTDA.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "COOPERATIVA ANDINA LTDA.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "CONSTRUCTORA AVANCE AGROINDUSTRIAL S.A.S.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "CONSULTORA VITA AGROINDUSTRIAL LTDA.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "INDUSTRIAS VALORE ALIMENTARIA LTDA.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "GANADERA ACTIVA S.A.S.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "CONSTRUCTORA CLAVE PROYECTOS S.A.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "CENTRO VITA ALIMENTARIA LTDA.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "DISTRIBUIDORA PUNTO COMERCIAL S.A.", "R": 5, "F": 5, "M": 5, "RFM": 555, "segmento": "Socios Estratégicos"}, {"cliente": "DISTRIBUIDORA NOVA INTEGRAL S.A.", "R": 5, "F": 5, "M": 4, "RFM": 554, "segmento": "Socios Estratégicos"}, {"cliente": "COMERCIALIZADORA STRATA S.A.", "R": 5, "F": 5, "M": 4, "RFM": 554, "segmento": "Socios Estratégicos"}, {"cliente": "COOPERATIVA NUEVA S.A.S.", "R": 5, "F": 5, "M": 4, "RFM": 554, "segmento": "Socios Estratégicos"}, {"cliente": "SUR TECH S.A.S", "R": 5, "F": 5, "M": 4, "RFM": 554, "segmento": "Socios Estratégicos"}, {"cliente": "SOLUCIONES LINEA INDUSTRIAL E.S.P.", "R": 5, "F": 5, "M": 4, "RFM": 554, "segmento": "Socios Estratégicos"}, {"cliente": "CONSTRUCTORA AVANCE PROYECTOS S.A.", "R": 5, "F": 5, "M": 3, "RFM": 553, "segmento": "Socios Estratégicos"}, {"cliente": "NACIONAL HORIZONTE S.A.S", "R": 5, "F": 4, "M": 5, "RFM": 545, "segmento": "Socios Estratégicos"}, {"cliente": "COOPERATIVA ANDINA ", "R": 5, "F": 4, "M": 5, "RFM": 545, "segmento": "Socios Estratégicos"}, {"cliente": "COOPERATIVA REGIONAL ", "R": 5, "F": 4, "M": 5, "RFM": 545, "segmento": "Socios Estratégicos"}, {"cliente": "DISTRIBUIDORA CAPITA INTEGRAL E.S.P.", "R": 5, "F": 4, "M": 5, "RFM": 545, "segmento": "Socios Estratégicos"}, {"cliente": "INTEGRAL CLAVE E.S.P.", "R": 5, "F": 4, "M": 4, "RFM": 544, "segmento": "Socios Estratégicos"}, {"cliente": "FIRMA CAPITAL E.S.P.", "R": 5, "F": 4, "M": 4, "RFM": 544, "segmento": "Socios Estratégicos"}, {"cliente": "COMERCIALIZADORA CORE LTDA.", "R": 5, "F": 4, "M": 4, "RFM": 544, "segmento": "Socios Estratégicos"}, {"cliente": "ANDES GROUP S.A.S", "R": 5, "F": 4, "M": 4, "RFM": 544, "segmento": "Socios Estratégicos"}, {"cliente": "AGROPECUARIA TERRA S.A.", "R": 5, "F": 4, "M": 4, "RFM": 544, "segmento": "Socios Estratégicos"}, {"cliente": "NACIONAL OMEGA LTDA.", "R": 5, "F": 4, "M": 3, "RFM": 543, "segmento": "Socios Estratégicos"}, {"cliente": "INDUSTRIAS APEX S.A.S", "R": 5, "F": 4, "M": 2, "RFM": 542, "segmento": "Socios Estratégicos"}, {"cliente": "CORPORACIÓN ALTA FINANCIERA S.A.", "R": 5, "F": 4, "M": 2, "RFM": 542, "segmento": "Socios Estratégicos"}, {"cliente": "SERVICIOS LOGIX MINERA S.A.S.", "R": 5, "F": 4, "M": 1, "RFM": 541, "segmento": "Socios Estratégicos"}, {"cliente": "INTEGRAL LOGIX COMERCIAL LTDA.", "R": 5, "F": 4, "M": 1, "RFM": 541, "segmento": "Socios Estratégicos"}, {"cliente": "ALFA DYNAMICS E.S.P.", "R": 5, "F": 3, "M": 4, "RFM": 534, "segmento": "Socios Estratégicos"}, {"cliente": "COMERCIALIZADORA CENTRAL LTDA.", "R": 5, "F": 3, "M": 4, "RFM": 534, "segmento": "Socios Estratégicos"}, {"cliente": "PACÍFICO SERVICES LTDA.", "R": 5, "F": 3, "M": 4, "RFM": 534, "segmento": "Socios Estratégicos"}, {"cliente": "APEX TECH LTDA.", "R": 5, "F": 3, "M": 3, "RFM": 533, "segmento": "Socios Estratégicos"}, {"cliente": "DISTRIBUIDORA LINEA BEBIDAS S.A.S.", "R": 5, "F": 3, "M": 3, "RFM": 533, "segmento": "Socios Estratégicos"}, {"cliente": "SOLUCIONES PACÍFICO LTDA.", "R": 5, "F": 3, "M": 3, "RFM": 533, "segmento": "Socios Estratégicos"}, {"cliente": "PROCESOS VALORE MÉDICA S.A.S.", "R": 5, "F": 3, "M": 2, "RFM": 532, "segmento": "Socios Estratégicos"}, {"cliente": "OPERACIONES PRIME AGROINDUSTRIAL LTDA.", "R": 5, "F": 3, "M": 2, "RFM": 532, "segmento": "Socios Estratégicos"}, {"cliente": "GRUPO CONSTRUCTOR MERAKI SAS \"ZOMAC\"", "R": 5, "F": 3, "M": 2, "RFM": 532, "segmento": "Socios Estratégicos"}, {"cliente": "AUTOMOTRIZ CAPITA LTDA.", "R": 5, "F": 3, "M": 2, "RFM": 532, "segmento": "Socios Estratégicos"}, {"cliente": "SIERRA SERVICES S.A.S", "R": 5, "F": 3, "M": 2, "RFM": 532, "segmento": "Socios Estratégicos"}, {"cliente": "INVERSIONES LOGIX TEXTIL S.A.S.", "R": 5, "F": 3, "M": 2, "RFM": 532, "segmento": "Socios Estratégicos"}, {"cliente": "INTEGRAL TRIPLE S.A.", "R": 5, "F": 3, "M": 1, "RFM": 531, "segmento": "Socios Estratégicos"}, {"cliente": "CONSTRUCTORA APEX INGENIERÍA S.A.S.", "R": 5, "F": 3, "M": 1, "RFM": 531, "segmento": "Socios Estratégicos"}, {"cliente": "SABANA SOLUTIONS S.A.S.", "R": 5, "F": 2, "M": 5, "RFM": 525, "segmento": "Socios Estratégicos"}, {"cliente": "OPERADORA LLANO FOOD S.A.S.", "R": 5, "F": 2, "M": 4, "RFM": 524, "segmento": "Socios Estratégicos"}, {"cliente": "AUTOMOTRIZ ALTA S.A.S.", "R": 5, "F": 2, "M": 3, "RFM": 523, "segmento": "Socios Estratégicos"}, {"cliente": "DISTRIBUIDORA NEXUS COMERCIAL LTDA.", "R": 5, "F": 2, "M": 3, "RFM": 523, "segmento": "Socios Estratégicos"}, {"cliente": "SERVICIOS SABANA AGROINDUSTRIAL LTDA.", "R": 5, "F": 2, "M": 2, "RFM": 522, "segmento": "Socios Estratégicos"}, {"cliente": "NACIONAL NOVA E.S.P.", "R": 5, "F": 2, "M": 2, "RFM": 522, "segmento": "Socios Estratégicos"}, {"cliente": "INVERSIONES CENTRAL MINERA S.A.", "R": 5, "F": 2, "M": 2, "RFM": 522, "segmento": "Socios Estratégicos"}, {"cliente": "ORIENTE DYNAMICS S.A.S", "R": 5, "F": 2, "M": 2, "RFM": 522, "segmento": "Socios Estratégicos"}, {"cliente": "SERVICIOS OPTIMA E.S.P.", "R": 5, "F": 2, "M": 2, "RFM": 522, "segmento": "Socios Estratégicos"}, {"cliente": "SOLUCIONES DIGITALES PRAXIS LTDA.", "R": 5, "F": 2, "M": 1, "RFM": 521, "segmento": "Socios Estratégicos"}, {"cliente": "NACIONAL VITA ENERGÉTICA E.S.P.", "R": 5, "F": 2, "M": 1, "RFM": 521, "segmento": "Socios Estratégicos"}, {"cliente": "AVANCE LOGISTICS S.A.S.", "R": 5, "F": 2, "M": 1, "RFM": 521, "segmento": "Socios Estratégicos"}, {"cliente": "LLANO NETWORKS S.A.S", "R": 5, "F": 2, "M": 1, "RFM": 521, "segmento": "Socios Estratégicos"}, {"cliente": "GRUPO ACTIVA S.A.S.", "R": 5, "F": 1, "M": 3, "RFM": 513, "segmento": "Socios Estratégicos"}, {"cliente": "CONSULTORA UNION FINANCIERA LTDA.", "R": 5, "F": 1, "M": 3, "RFM": 513, "segmento": "Socios Estratégicos"}, {"cliente": "DISTRIBUIDORA FUERZA S.A.S.", "R": 5, "F": 1, "M": 3, "RFM": 513, "segmento": "Socios Estratégicos"}, {"cliente": "COOPERATIVA ANDINA ", "R": 5, "F": 1, "M": 2, "RFM": 512, "segmento": "Socios Estratégicos"}, {"cliente": "CORPORACIÓN NOVA COMERCIAL E.S.P.", "R": 5, "F": 1, "M": 1, "RFM": 511, "segmento": "Socios Estratégicos"}, {"cliente": "INTEGRAL CORDIAL E.S.P.", "R": 5, "F": 1, "M": 1, "RFM": 511, "segmento": "Socios Estratégicos"}, {"cliente": "INVERSIONES CAPITA LOGÍSTICA S.A.", "R": 5, "F": 1, "M": 1, "RFM": 511, "segmento": "Socios Estratégicos"}, {"cliente": "DISTRIBUIDORA SIERRA LOGÍSTICA LTDA.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "DISTRIBUIDORA AVANCE LICORES S.A.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "INDUSTRIAS SIERRA S.A.S.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "CORPORACIÓN EDUCATIVA NUEVA DE COLOMBIA", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "ASOCIACIÓN CIVILES ORIENTE", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "PROCESOS NEXUS S.A.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "VALORE PROJECTS S.A.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "TECNOLOGÍA PROTEK S.A.S.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "INVERSIONES ORIENTE MÉDICA S.A.S.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "SISTEMAS FUTURA S.A.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "DISTRIBUIDORA PRAXIS BEBIDAS S.A.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "CENTRO ACTIVA S.A.S", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "CENTRO PACÍFICO S.A.S", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "TERRA GROUP E.S.P.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "RED FIRMA EDUCATIVA LTDA.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "INSTITUTO NOVA ANDINO", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "VALORE LOGISTICS S.A.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "INDUSTRIAS TRIPLE LTDA.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "PROCESADORA AGRÍCOLA APEX S.A.S.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "ANDINA AVANCE EDUCATIVA E.S.P.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "STRATA SERVICES S.A.S.", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "UNIVERSIDAD NUEVA DEL VALLE", "R": 4, "F": 5, "M": 5, "RFM": 455, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "UNION CONSULTING E.S.P.", "R": 4, "F": 5, "M": 4, "RFM": 454, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "INDUSTRIAS CAPITA S.A.S.", "R": 4, "F": 5, "M": 4, "RFM": 454, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "PROCESOS CAPITA S.A.S.", "R": 4, "F": 5, "M": 4, "RFM": 454, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "OPERACIONES METRO S.A.", "R": 4, "F": 5, "M": 4, "RFM": 454, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "AGROPECUARIA CORE S.A.", "R": 4, "F": 5, "M": 4, "RFM": 454, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "PUNTO CONSULTING S.A.S", "R": 4, "F": 4, "M": 5, "RFM": 445, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "TECNOLOGÍA ORIENTE LTDA.", "R": 4, "F": 4, "M": 5, "RFM": 445, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "PUNTO GROUP E.S.P.", "R": 4, "F": 4, "M": 4, "RFM": 444, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "DISTRIBUIDORA PUNTO S.A.S", "R": 4, "F": 4, "M": 4, "RFM": 444, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "AVÍCOLA VITA LTDA.", "R": 4, "F": 4, "M": 4, "RFM": 444, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "LOGIX GROUP S.A.S", "R": 4, "F": 4, "M": 4, "RFM": 444, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "DISTRIBUIDORA ENLACE SALUD LTDA.", "R": 4, "F": 4, "M": 4, "RFM": 444, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "GRUPO OPTIMA COMERCIAL E.S.P.", "R": 4, "F": 4, "M": 4, "RFM": 444, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "FUTURA GROUP S.A.S.", "R": 4, "F": 4, "M": 3, "RFM": 443, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "GRUPO ORIENTE COMERCIAL S.A.S.", "R": 4, "F": 4, "M": 3, "RFM": 443, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "CORDIAL PARTNERS S.A.S.", "R": 4, "F": 4, "M": 3, "RFM": 443, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "OPERACIONES METRO S.A.S", "R": 4, "F": 4, "M": 3, "RFM": 443, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "DISTRIBUIDORA LOGIX LTDA.", "R": 4, "F": 4, "M": 3, "RFM": 443, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "OPERACIONES DELTA S.A.S.", "R": 4, "F": 4, "M": 3, "RFM": 443, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "CONECTA TRIPLE S.A.S.", "R": 4, "F": 4, "M": 3, "RFM": 443, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "TECNOLOGÍA SABANA TEXTIL LTDA.", "R": 4, "F": 4, "M": 3, "RFM": 443, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "SISTEMAS CENTRAL S.A.S.", "R": 4, "F": 4, "M": 3, "RFM": 443, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "CENTRO PRAXIS EDUCATIVA S.A.", "R": 4, "F": 4, "M": 3, "RFM": 443, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "CONSTRUCTORA ACTIVA PROYECTOS S.A.S.", "R": 4, "F": 4, "M": 2, "RFM": 442, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "PROCESOS LLANO S.A.S.", "R": 4, "F": 4, "M": 2, "RFM": 442, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "INVERSIONES SABANA AGROINDUSTRIAL E.S.P.", "R": 4, "F": 4, "M": 1, "RFM": 441, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "SISTEMAS TRIPLE S.A.S.", "R": 4, "F": 4, "M": 1, "RFM": 441, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "SERVICIOS GLOBAL E.S.P.", "R": 4, "F": 4, "M": 1, "RFM": 441, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "ACTIVA CONSULTING LTDA.", "R": 4, "F": 4, "M": 1, "RFM": 441, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "SISTEMAS METRO LTDA.", "R": 4, "F": 4, "M": 1, "RFM": 441, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "ANDES SOLUTIONS LTDA.", "R": 4, "F": 3, "M": 4, "RFM": 434, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "COMERCIALIZADORA HORIZONTE LTDA.", "R": 4, "F": 3, "M": 4, "RFM": 434, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "AGROPECUARIA ENLACE S.A.S.", "R": 4, "F": 3, "M": 4, "RFM": 434, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "RED APEX INDUSTRIAL S.A.", "R": 4, "F": 3, "M": 4, "RFM": 434, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "OPERACIONES CORDIAL S.A.S.", "R": 4, "F": 3, "M": 3, "RFM": 433, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "INVERSIONES TRIPLE S.A.", "R": 4, "F": 3, "M": 3, "RFM": 433, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "DISTRIBUIDORA CAPITA LOGÍSTICA LTDA.", "R": 4, "F": 3, "M": 3, "RFM": 433, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "DISTRIBUIDORA CAPITA S.A.S.", "R": 4, "F": 3, "M": 3, "RFM": 433, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "NACIONAL ORIENTE SALUD E.S.P.", "R": 4, "F": 3, "M": 2, "RFM": 432, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "SOLUCIONES NOVA TEXTIL E.S.P.", "R": 4, "F": 3, "M": 2, "RFM": 432, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "CONSULTORA PRIME S.A.S.", "R": 4, "F": 2, "M": 3, "RFM": 423, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "SUR LOGISTICS S.A.S.", "R": 4, "F": 2, "M": 3, "RFM": 423, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "ENLACE NETWORKS E.S.P.", "R": 4, "F": 2, "M": 3, "RFM": 423, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "OPERACIONES AVANCE LOGÍSTICA E.S.P.", "R": 4, "F": 2, "M": 2, "RFM": 422, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "SISTEMAS VERSA S.A.S.", "R": 4, "F": 2, "M": 2, "RFM": 422, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "INTEGRAL CARIBE MINERA E.S.P.", "R": 4, "F": 2, "M": 2, "RFM": 422, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "GLOBAL NETWORKS E.S.P.", "R": 4, "F": 2, "M": 1, "RFM": 421, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "PROTEK CAPITAL S.A.", "R": 4, "F": 2, "M": 1, "RFM": 421, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "NOVA PROJECTS S.A.S", "R": 4, "F": 1, "M": 4, "RFM": 414, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "AGROPECUARIA OPTIMA S.A.", "R": 4, "F": 1, "M": 3, "RFM": 413, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "STRATA PARTNERS LTDA.", "R": 4, "F": 1, "M": 3, "RFM": 413, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "CORPORACIÓN EDUCATIVA INTEGRAL ANDINA", "R": 4, "F": 1, "M": 3, "RFM": 413, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "OPERACIONES METRO S.A.", "R": 4, "F": 1, "M": 3, "RFM": 413, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "COMERCIALIZADORA AVANCE S.A.", "R": 4, "F": 1, "M": 1, "RFM": 411, "segmento": "Clientes Corporativos Fieles"}, {"cliente": "DISTRIBUIDORA METRO COMERCIAL E.S.P.", "R": 3, "F": 5, "M": 5, "RFM": 355, "segmento": "Cuentas en Alerta"}, {"cliente": "SERVICIOS PÚBLICOS ENLACE E.S.P.", "R": 3, "F": 5, "M": 5, "RFM": 355, "segmento": "Cuentas en Alerta"}, {"cliente": "ANDINA CARIBE MINERA E.S.P.", "R": 3, "F": 5, "M": 5, "RFM": 355, "segmento": "Cuentas en Alerta"}, {"cliente": "FUERZA PARTNERS S.A.S", "R": 3, "F": 5, "M": 5, "RFM": 355, "segmento": "Cuentas en Alerta"}, {"cliente": "INDUSTRIAS IMPULSO S.A.S.", "R": 3, "F": 5, "M": 4, "RFM": 354, "segmento": "Cuentas en Alerta"}, {"cliente": "SERVICIOS PÚBLICOS LINEA E.S.P.", "R": 3, "F": 5, "M": 4, "RFM": 354, "segmento": "Cuentas en Alerta"}, {"cliente": "CORPORACIÓN PACÍFICO MINERA S.A.", "R": 3, "F": 5, "M": 4, "RFM": 354, "segmento": "Cuentas en Alerta"}, {"cliente": "CONSTRUCTORA ALFA TEXTIL S.A.S.", "R": 3, "F": 5, "M": 4, "RFM": 354, "segmento": "Cuentas en Alerta"}, {"cliente": "AVANCE NETWORKS S.A.S.", "R": 3, "F": 5, "M": 4, "RFM": 354, "segmento": "Cuentas en Alerta"}, {"cliente": "INTEGRAL PACÍFICO SALUD E.S.P.", "R": 3, "F": 5, "M": 4, "RFM": 354, "segmento": "Cuentas en Alerta"}, {"cliente": "SISTEMAS ENLACE S.A.", "R": 3, "F": 5, "M": 3, "RFM": 353, "segmento": "Cuentas en Alerta"}, {"cliente": "ALTA NETWORKS S.A.S", "R": 3, "F": 5, "M": 3, "RFM": 353, "segmento": "Cuentas en Alerta"}, {"cliente": "AUTOMOTRIZ APEX S.A.S.", "R": 3, "F": 5, "M": 3, "RFM": 353, "segmento": "Cuentas en Alerta"}, {"cliente": "NACIONAL LOGIX LTDA.", "R": 3, "F": 4, "M": 5, "RFM": 345, "segmento": "Cuentas en Alerta"}, {"cliente": "DISTRIBUIDORA CORDIAL LOGÍSTICA S.A.S.", "R": 3, "F": 4, "M": 5, "RFM": 345, "segmento": "Cuentas en Alerta"}, {"cliente": "INVERSIONES CAPITA LTDA.", "R": 3, "F": 4, "M": 4, "RFM": 344, "segmento": "Cuentas en Alerta"}, {"cliente": "CORPORACIÓN PUNTO AGROINDUSTRIAL S.A.S.", "R": 3, "F": 4, "M": 4, "RFM": 344, "segmento": "Cuentas en Alerta"}, {"cliente": "DISTRIBUIDORA CENTRAL COMERCIAL E.S.P.", "R": 3, "F": 4, "M": 4, "RFM": 344, "segmento": "Cuentas en Alerta"}, {"cliente": "DISTRIBUIDORA PRAXIS COMERCIAL LTDA.", "R": 3, "F": 4, "M": 3, "RFM": 343, "segmento": "Cuentas en Alerta"}, {"cliente": "INTEGRAL ALFA S.A.S", "R": 3, "F": 4, "M": 3, "RFM": 343, "segmento": "Cuentas en Alerta"}, {"cliente": "ORIENTE PARTNERS S.A.S", "R": 3, "F": 4, "M": 2, "RFM": 342, "segmento": "Cuentas en Alerta"}, {"cliente": "SOLUCIONES TRIPLE S.A.", "R": 3, "F": 4, "M": 1, "RFM": 341, "segmento": "Cuentas en Alerta"}, {"cliente": "COMERCIALIZADORA ALFA S.A.S", "R": 3, "F": 4, "M": 1, "RFM": 341, "segmento": "Cuentas en Alerta"}, {"cliente": "INDUSTRIAS UNION ENERGÉTICA S.A.", "R": 3, "F": 3, "M": 4, "RFM": 334, "segmento": "Cuentas en Alerta"}, {"cliente": "TECNOLOGÍA FUTURA TEXTIL S.A.S.", "R": 3, "F": 3, "M": 4, "RFM": 334, "segmento": "Cuentas en Alerta"}, {"cliente": "TECNOLOGÍA IMPULSO ALIMENTARIA S.A.S.", "R": 3, "F": 3, "M": 4, "RFM": 334, "segmento": "Cuentas en Alerta"}, {"cliente": "CENTRO PRAXIS ENERGÉTICA E.S.P.", "R": 3, "F": 3, "M": 4, "RFM": 334, "segmento": "Cuentas en Alerta"}, {"cliente": "ACTIVA CONNECT S.A.", "R": 3, "F": 3, "M": 3, "RFM": 333, "segmento": "Cuentas en Alerta"}, {"cliente": "PRAXIS VENTURES S.A.S.", "R": 3, "F": 3, "M": 3, "RFM": 333, "segmento": "Cuentas en Alerta"}, {"cliente": "UNIVERSIDAD CENTRAL DEL CARIBE", "R": 3, "F": 3, "M": 3, "RFM": 333, "segmento": "Cuentas en Alerta"}, {"cliente": "DISTRIBUIDORA PRIME MINERA LTDA.", "R": 3, "F": 3, "M": 3, "RFM": 333, "segmento": "Cuentas en Alerta"}, {"cliente": "SOLUCIONES LINEA S.A.S", "R": 3, "F": 3, "M": 2, "RFM": 332, "segmento": "Cuentas en Alerta"}, {"cliente": "ALIANZA FIRMA SALUD E.S.P.", "R": 3, "F": 3, "M": 2, "RFM": 332, "segmento": "Cuentas en Alerta"}, {"cliente": "OMEGA ASSETS S.A.S", "R": 3, "F": 3, "M": 2, "RFM": 332, "segmento": "Cuentas en Alerta"}, {"cliente": "HOSPITAL AVANZADA ", "R": 3, "F": 3, "M": 2, "RFM": 332, "segmento": "Cuentas en Alerta"}, {"cliente": "AUTOMOTRIZ PROTEK LTDA.", "R": 3, "F": 3, "M": 2, "RFM": 332, "segmento": "Cuentas en Alerta"}, {"cliente": "PROCESOS ACTIVA LTDA.", "R": 3, "F": 3, "M": 2, "RFM": 332, "segmento": "Cuentas en Alerta"}, {"cliente": "SISTEMAS NORTE S.A.", "R": 3, "F": 3, "M": 2, "RFM": 332, "segmento": "Cuentas en Alerta"}, {"cliente": "NACIONAL NOVA S.A.", "R": 3, "F": 3, "M": 1, "RFM": 331, "segmento": "Cuentas en Alerta"}, {"cliente": "SISTEMAS BRILLO S.A.", "R": 3, "F": 3, "M": 1, "RFM": 331, "segmento": "Cuentas en Alerta"}, {"cliente": "SERVICIOS HORIZONTE LOGÍSTICA LTDA.", "R": 3, "F": 2, "M": 5, "RFM": 325, "segmento": "Cuentas en Alerta"}, {"cliente": "INVERSIONES CORDIAL ALIMENTARIA S.A.", "R": 3, "F": 2, "M": 3, "RFM": 323, "segmento": "Cuentas en Alerta"}, {"cliente": "OPERACIONES PUNTO MINERA E.S.P.", "R": 3, "F": 2, "M": 3, "RFM": 323, "segmento": "Cuentas en Alerta"}, {"cliente": "GRUPO NORTE AGROINDUSTRIAL LTDA.", "R": 3, "F": 2, "M": 3, "RFM": 323, "segmento": "Cuentas en Alerta"}, {"cliente": "PROCESADORA AGRÍCOLA METRO LTDA.", "R": 3, "F": 2, "M": 3, "RFM": 323, "segmento": "Cuentas en Alerta"}, {"cliente": "DISTRIBUIDORA CLAVE E.S.P.", "R": 3, "F": 2, "M": 3, "RFM": 323, "segmento": "Cuentas en Alerta"}, {"cliente": "IMPULSO CONNECT S.A.S.", "R": 3, "F": 2, "M": 2, "RFM": 322, "segmento": "Cuentas en Alerta"}, {"cliente": "CORPORACIÓN EDUCATIVA DEL PROGRESO CENTRAL", "R": 3, "F": 2, "M": 2, "RFM": 322, "segmento": "Cuentas en Alerta"}, {"cliente": "CONSTRUCTORA HORIZONTE INGENIERÍA S.A.S.", "R": 3, "F": 2, "M": 2, "RFM": 322, "segmento": "Cuentas en Alerta"}, {"cliente": "ORIENTE VENTURES S.A.S.", "R": 3, "F": 2, "M": 2, "RFM": 322, "segmento": "Cuentas en Alerta"}, {"cliente": "AUTOMOTRIZ CORDIAL ", "R": 3, "F": 2, "M": 2, "RFM": 322, "segmento": "Cuentas en Alerta"}, {"cliente": "SERVICIOS ALTA LOGÍSTICA E.S.P.", "R": 3, "F": 2, "M": 2, "RFM": 322, "segmento": "Cuentas en Alerta"}, {"cliente": "UNION VENTURES S.A.S.", "R": 3, "F": 2, "M": 1, "RFM": 321, "segmento": "Cuentas en Alerta"}, {"cliente": "PROCESOS SUR LOGÍSTICA S.A.S.", "R": 3, "F": 2, "M": 1, "RFM": 321, "segmento": "Cuentas en Alerta"}, {"cliente": "CLÍNICA CENTRAL S.A.S.", "R": 3, "F": 2, "M": 1, "RFM": 321, "segmento": "Cuentas en Alerta"}, {"cliente": "ANDINA FIRMA AGROINDUSTRIAL LTDA.", "R": 3, "F": 2, "M": 1, "RFM": 321, "segmento": "Cuentas en Alerta"}, {"cliente": "INVERSIONES PROTEK MINERA E.S.P.", "R": 3, "F": 2, "M": 1, "RFM": 321, "segmento": "Cuentas en Alerta"}, {"cliente": "ALIANZA PUNTO S.A.S.", "R": 3, "F": 2, "M": 1, "RFM": 321, "segmento": "Cuentas en Alerta"}, {"cliente": "METRO GROUP S.A.", "R": 3, "F": 2, "M": 1, "RFM": 321, "segmento": "Cuentas en Alerta"}, {"cliente": "HORIZONTE NETWORKS LTDA.", "R": 3, "F": 1, "M": 4, "RFM": 314, "segmento": "Cuentas en Alerta"}, {"cliente": "CLÍNICA NOVA S.A.S.", "R": 3, "F": 1, "M": 4, "RFM": 314, "segmento": "Cuentas en Alerta"}, {"cliente": "DISTRIBUIDORA VITA MÉDICA E.S.P.", "R": 3, "F": 1, "M": 4, "RFM": 314, "segmento": "Cuentas en Alerta"}, {"cliente": "ACTIVA SYSTEMS S.A.", "R": 3, "F": 1, "M": 3, "RFM": 313, "segmento": "Cuentas en Alerta"}, {"cliente": "UNIVERSIDAD ABIERTA NACIONAL", "R": 3, "F": 1, "M": 2, "RFM": 312, "segmento": "Cuentas en Alerta"}, {"cliente": "DISTRIBUIDORA ALFA COMERCIAL E.S.P.", "R": 3, "F": 1, "M": 2, "RFM": 312, "segmento": "Cuentas en Alerta"}, {"cliente": "GRUPO TERRA S.A.", "R": 3, "F": 1, "M": 2, "RFM": 312, "segmento": "Cuentas en Alerta"}, {"cliente": "COMERCIALIZADORA NEXUS S.A.S", "R": 3, "F": 1, "M": 2, "RFM": 312, "segmento": "Cuentas en Alerta"}, {"cliente": "DISTRIBUIDORA APEX COMERCIAL S.A.", "R": 3, "F": 1, "M": 2, "RFM": 312, "segmento": "Cuentas en Alerta"}, {"cliente": "VERSA VENTURES S.A.S.", "R": 3, "F": 1, "M": 2, "RFM": 312, "segmento": "Cuentas en Alerta"}, {"cliente": "AGROINDUSTRIAL SIERRA LTDA.", "R": 3, "F": 1, "M": 1, "RFM": 311, "segmento": "Cuentas en Alerta"}, {"cliente": "ALIANZA IMPULSO E.S.P.", "R": 3, "F": 1, "M": 1, "RFM": 311, "segmento": "Cuentas en Alerta"}, {"cliente": "INDUSTRIAS ANDES LTDA.", "R": 3, "F": 1, "M": 1, "RFM": 311, "segmento": "Cuentas en Alerta"}, {"cliente": "STRATA SOLUTIONS E.S.P.", "R": 3, "F": 1, "M": 1, "RFM": 311, "segmento": "Cuentas en Alerta"}, {"cliente": "NEXUS LOGISTICS E.S.P.", "R": 3, "F": 1, "M": 1, "RFM": 311, "segmento": "Cuentas en Alerta"}, {"cliente": "PROCESOS ENLACE S.A.S.", "R": 3, "F": 1, "M": 1, "RFM": 311, "segmento": "Cuentas en Alerta"}, {"cliente": "PROCESADORA AGRÍCOLA ORIENTE S.A.S.", "R": 3, "F": 1, "M": 1, "RFM": 311, "segmento": "Cuentas en Alerta"}, {"cliente": "PROCESADORA AGRÍCOLA ORIENTE S.A.", "R": 2, "F": 5, "M": 5, "RFM": 255, "segmento": "Nuevos Aliados"}, {"cliente": "INSTITUTO DE SALUD DEL SUR ", "R": 2, "F": 5, "M": 4, "RFM": 254, "segmento": "Nuevos Aliados"}, {"cliente": "PACÍFICO TECH LTDA.", "R": 2, "F": 4, "M": 5, "RFM": 245, "segmento": "Nuevos Aliados"}, {"cliente": "LLANO CONNECT E.S.P.", "R": 2, "F": 4, "M": 5, "RFM": 245, "segmento": "Nuevos Aliados"}, {"cliente": "PRAXIS TECH E.S.P.", "R": 2, "F": 4, "M": 5, "RFM": 245, "segmento": "Nuevos Aliados"}, {"cliente": "CONECTA CAPITA S.A.S.", "R": 2, "F": 4, "M": 5, "RFM": 245, "segmento": "Nuevos Aliados"}, {"cliente": "PROCESADORA AGRÍCOLA CENTRAL LTDA.", "R": 2, "F": 4, "M": 5, "RFM": 245, "segmento": "Nuevos Aliados"}, {"cliente": "ANDINA NORTE TEXTIL S.A.", "R": 2, "F": 4, "M": 5, "RFM": 245, "segmento": "Nuevos Aliados"}, {"cliente": "CENTRO ACADÉMICO NOVA REGIONAL", "R": 2, "F": 4, "M": 4, "RFM": 244, "segmento": "Nuevos Aliados"}, {"cliente": "INVERSIONES CLAVE S.A.", "R": 2, "F": 4, "M": 4, "RFM": 244, "segmento": "Nuevos Aliados"}, {"cliente": "SERVICIOS PÚBLICOS CORDIAL E.S.P.", "R": 2, "F": 4, "M": 4, "RFM": 244, "segmento": "Nuevos Aliados"}, {"cliente": "METRO ASSETS S.A.S.", "R": 2, "F": 4, "M": 4, "RFM": 244, "segmento": "Nuevos Aliados"}, {"cliente": "PROCESADORA AGRÍCOLA CLAVE LTDA.", "R": 2, "F": 4, "M": 4, "RFM": 244, "segmento": "Nuevos Aliados"}, {"cliente": "DISTRIBUIDORA FUTURA INTEGRAL S.A.S.", "R": 2, "F": 4, "M": 4, "RFM": 244, "segmento": "Nuevos Aliados"}, {"cliente": "CONSULTORA STRATA SALUD E.S.P.", "R": 2, "F": 4, "M": 4, "RFM": 244, "segmento": "Nuevos Aliados"}, {"cliente": "ALIANZA CLAVE S.A.S.", "R": 2, "F": 4, "M": 3, "RFM": 243, "segmento": "Nuevos Aliados"}, {"cliente": "DISTRIBUIDORA UNION LOGÍSTICA E.S.P.", "R": 2, "F": 4, "M": 3, "RFM": 243, "segmento": "Nuevos Aliados"}, {"cliente": "ORIENTE PARTNERS LTDA.", "R": 2, "F": 4, "M": 3, "RFM": 243, "segmento": "Nuevos Aliados"}, {"cliente": "SERVICIOS ORIENTE MINERA LTDA.", "R": 2, "F": 4, "M": 3, "RFM": 243, "segmento": "Nuevos Aliados"}, {"cliente": "SISTEMAS DELTA E.S.P.", "R": 2, "F": 4, "M": 1, "RFM": 241, "segmento": "Nuevos Aliados"}, {"cliente": "CORPORACIÓN HORIZONTE MINERA S.A.S.", "R": 2, "F": 3, "M": 5, "RFM": 235, "segmento": "Nuevos Aliados"}, {"cliente": "RED PUNTO LTDA.", "R": 2, "F": 3, "M": 4, "RFM": 234, "segmento": "Nuevos Aliados"}, {"cliente": "ALFA LOGISTICS S.A.S.", "R": 2, "F": 3, "M": 4, "RFM": 234, "segmento": "Nuevos Aliados"}, {"cliente": "UNIDAD DE SALUD CENTRAL LTDA.", "R": 2, "F": 3, "M": 4, "RFM": 234, "segmento": "Nuevos Aliados"}, {"cliente": "CENTRAL PARTNERS S.A.S.", "R": 2, "F": 3, "M": 4, "RFM": 234, "segmento": "Nuevos Aliados"}, {"cliente": "NOVA CAPITAL S.A.", "R": 2, "F": 3, "M": 3, "RFM": 233, "segmento": "Nuevos Aliados"}, {"cliente": "FUTURA CONNECT S.A.S.", "R": 2, "F": 3, "M": 3, "RFM": 233, "segmento": "Nuevos Aliados"}, {"cliente": "TECNOLOGÍA LINEA S.A.S.", "R": 2, "F": 3, "M": 2, "RFM": 232, "segmento": "Nuevos Aliados"}, {"cliente": "PROTEK PROJECTS LTDA.", "R": 2, "F": 3, "M": 2, "RFM": 232, "segmento": "Nuevos Aliados"}, {"cliente": "ALIANZA TRIPLE COMERCIAL S.A.", "R": 2, "F": 3, "M": 2, "RFM": 232, "segmento": "Nuevos Aliados"}, {"cliente": "CARIBE CONSULTING E.S.P.", "R": 2, "F": 3, "M": 2, "RFM": 232, "segmento": "Nuevos Aliados"}, {"cliente": "CONSULTORA LLANO S.A.S.", "R": 2, "F": 3, "M": 2, "RFM": 232, "segmento": "Nuevos Aliados"}, {"cliente": "AGROPECUARIA SABANA S.A.S.", "R": 2, "F": 3, "M": 1, "RFM": 231, "segmento": "Nuevos Aliados"}, {"cliente": "GRUPO GLOBAL MÉDICA LTDA.", "R": 2, "F": 3, "M": 1, "RFM": 231, "segmento": "Nuevos Aliados"}, {"cliente": "RED BRILLO S.A.", "R": 2, "F": 3, "M": 1, "RFM": 231, "segmento": "Nuevos Aliados"}, {"cliente": "GRUPO ANDES MÉDICA E.S.P.", "R": 2, "F": 3, "M": 1, "RFM": 231, "segmento": "Nuevos Aliados"}, {"cliente": "UNIVERSIDAD DEL PROGRESO DE COLOMBIA", "R": 2, "F": 2, "M": 4, "RFM": 224, "segmento": "Nuevos Aliados"}, {"cliente": "ACTIVA VENTURES LTDA.", "R": 2, "F": 2, "M": 4, "RFM": 224, "segmento": "Nuevos Aliados"}, {"cliente": "FUERZA SYSTEMS S.A.S", "R": 2, "F": 2, "M": 4, "RFM": 224, "segmento": "Nuevos Aliados"}, {"cliente": "SOLUCIONES DELTA MINERA S.A.", "R": 2, "F": 2, "M": 3, "RFM": 223, "segmento": "Nuevos Aliados"}, {"cliente": "CORPORACIÓN ACTIVA SALUD LTDA.", "R": 2, "F": 2, "M": 3, "RFM": 223, "segmento": "Nuevos Aliados"}, {"cliente": "ALIANZA NEXUS S.A.", "R": 2, "F": 2, "M": 3, "RFM": 223, "segmento": "Nuevos Aliados"}, {"cliente": "CONSTRUCTORA GLOBAL S.A.", "R": 2, "F": 2, "M": 3, "RFM": 223, "segmento": "Nuevos Aliados"}, {"cliente": "CENTRAL CONNECT S.A.S", "R": 2, "F": 2, "M": 3, "RFM": 223, "segmento": "Nuevos Aliados"}, {"cliente": "VALORE ASSETS LTDA.", "R": 2, "F": 2, "M": 2, "RFM": 222, "segmento": "Nuevos Aliados"}, {"cliente": "DISTRIBUIDORA CORDIAL S.A.S", "R": 2, "F": 2, "M": 2, "RFM": 222, "segmento": "Nuevos Aliados"}, {"cliente": "INVERSIONES FUTURA LTDA.", "R": 2, "F": 2, "M": 2, "RFM": 222, "segmento": "Nuevos Aliados"}, {"cliente": "CONSULTORA CORDIAL EDUCATIVA LTDA.", "R": 2, "F": 2, "M": 2, "RFM": 222, "segmento": "Nuevos Aliados"}, {"cliente": "SERVICIOS PÚBLICOS ORIENTE E.S.P.", "R": 2, "F": 2, "M": 2, "RFM": 222, "segmento": "Nuevos Aliados"}, {"cliente": "INDUSTRIAS UNION FINANCIERA LTDA.", "R": 2, "F": 2, "M": 2, "RFM": 222, "segmento": "Nuevos Aliados"}, {"cliente": "CORPORACIÓN ORIENTE ALIMENTARIA LTDA.", "R": 2, "F": 2, "M": 2, "RFM": 222, "segmento": "Nuevos Aliados"}, {"cliente": "CORPORACIÓN NORTE E.S.P.", "R": 2, "F": 2, "M": 2, "RFM": 222, "segmento": "Nuevos Aliados"}, {"cliente": "CENTRO LINEA S.A.S.", "R": 2, "F": 2, "M": 2, "RFM": 222, "segmento": "Nuevos Aliados"}, {"cliente": "UNIVERSIDAD INTEGRAL ANDINA", "R": 2, "F": 2, "M": 2, "RFM": 222, "segmento": "Nuevos Aliados"}, {"cliente": "DISTRIBUIDORA ANDES ENERGÉTICA S.A.S.", "R": 2, "F": 2, "M": 1, "RFM": 221, "segmento": "Nuevos Aliados"}, {"cliente": "METRO CONNECT S.A.S", "R": 2, "F": 2, "M": 1, "RFM": 221, "segmento": "Nuevos Aliados"}, {"cliente": "CONSTRUCTORA FUERZA TEXTIL S.A.", "R": 2, "F": 2, "M": 1, "RFM": 221, "segmento": "Nuevos Aliados"}, {"cliente": "CONSULTORA NEXUS SALUD S.A.", "R": 2, "F": 2, "M": 1, "RFM": 221, "segmento": "Nuevos Aliados"}, {"cliente": "CORE LOGISTICS S.A.", "R": 2, "F": 1, "M": 5, "RFM": 215, "segmento": "Nuevos Aliados"}, {"cliente": "COOPERATIVA NUEVA S.A.S.", "R": 2, "F": 1, "M": 4, "RFM": 214, "segmento": "Nuevos Aliados"}, {"cliente": "SISTEMAS CAPITA ENERGÉTICA S.A.S.", "R": 2, "F": 1, "M": 3, "RFM": 213, "segmento": "Nuevos Aliados"}, {"cliente": "CONSTRUCTORA DELTA MÉDICA E.S.P.", "R": 2, "F": 1, "M": 3, "RFM": 213, "segmento": "Nuevos Aliados"}, {"cliente": "INTEGRAL LOGIX FINANCIERA S.A.", "R": 2, "F": 1, "M": 3, "RFM": 213, "segmento": "Nuevos Aliados"}, {"cliente": "AUTOMOTRIZ ORIENTE S.A.S.", "R": 2, "F": 1, "M": 3, "RFM": 213, "segmento": "Nuevos Aliados"}, {"cliente": "CONSULTORA DELTA LOGÍSTICA LTDA.", "R": 2, "F": 1, "M": 2, "RFM": 212, "segmento": "Nuevos Aliados"}, {"cliente": "CONSTRUCTORA NEXUS S.A.", "R": 2, "F": 1, "M": 2, "RFM": 212, "segmento": "Nuevos Aliados"}, {"cliente": "ANDES VENTURES S.A.S.", "R": 2, "F": 1, "M": 2, "RFM": 212, "segmento": "Nuevos Aliados"}, {"cliente": "CENTRO ACTIVA SALUD E.S.P.", "R": 2, "F": 1, "M": 2, "RFM": 212, "segmento": "Nuevos Aliados"}, {"cliente": "APEX SERVICES E.S.P.", "R": 2, "F": 1, "M": 1, "RFM": 211, "segmento": "Nuevos Aliados"}, {"cliente": "LLANO ASSETS LTDA.", "R": 2, "F": 1, "M": 1, "RFM": 211, "segmento": "Nuevos Aliados"}, {"cliente": "DISTRIBUIDORA PUNTO COMERCIAL S.A.", "R": 2, "F": 1, "M": 1, "RFM": 211, "segmento": "Nuevos Aliados"}, {"cliente": "ANDINA OPTIMA S.A.S.", "R": 2, "F": 1, "M": 1, "RFM": 211, "segmento": "Nuevos Aliados"}, {"cliente": "ENLACE VENTURES S.A.S.", "R": 2, "F": 1, "M": 1, "RFM": 211, "segmento": "Nuevos Aliados"}, {"cliente": "CLAVE NETWORKS LTDA.", "R": 2, "F": 1, "M": 1, "RFM": 211, "segmento": "Nuevos Aliados"}, {"cliente": "ALIANZA ALFA ENERGÉTICA S.A.S.", "R": 2, "F": 1, "M": 1, "RFM": 211, "segmento": "Nuevos Aliados"}, {"cliente": "INTEGRAL CLAVE ALIMENTARIA S.A.S.", "R": 2, "F": 1, "M": 1, "RFM": 211, "segmento": "Nuevos Aliados"}, {"cliente": "UNION PROJECTS S.A.S", "R": 1, "F": 5, "M": 5, "RFM": 155, "segmento": "Prospectos Inactivos"}, {"cliente": "HOSPITAL CENTRAL ", "R": 1, "F": 5, "M": 5, "RFM": 155, "segmento": "Prospectos Inactivos"}, {"cliente": "SERVICIOS PÚBLICOS TERRA E.S.P.", "R": 1, "F": 5, "M": 5, "RFM": 155, "segmento": "Prospectos Inactivos"}, {"cliente": "SISTEMAS CARIBE LTDA.", "R": 1, "F": 5, "M": 5, "RFM": 155, "segmento": "Prospectos Inactivos"}, {"cliente": "GANADERA NORTE S.A.S.", "R": 1, "F": 5, "M": 3, "RFM": 153, "segmento": "Prospectos Inactivos"}, {"cliente": "OPERACIONES LOGIX SALUD LTDA.", "R": 1, "F": 5, "M": 3, "RFM": 153, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA BRILLO MÉDICA E.S.P.", "R": 1, "F": 4, "M": 5, "RFM": 145, "segmento": "Prospectos Inactivos"}, {"cliente": "AUTOMOTRIZ STRATA LTDA.", "R": 1, "F": 4, "M": 5, "RFM": 145, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA IMPULSO LICORES S.A.", "R": 1, "F": 4, "M": 4, "RFM": 144, "segmento": "Prospectos Inactivos"}, {"cliente": "SISTEMAS BRILLO S.A.", "R": 1, "F": 4, "M": 4, "RFM": 144, "segmento": "Prospectos Inactivos"}, {"cliente": "CORPORACIÓN GLOBAL TEXTIL S.A.", "R": 1, "F": 4, "M": 4, "RFM": 144, "segmento": "Prospectos Inactivos"}, {"cliente": "GANADERA VALORE S.A.", "R": 1, "F": 4, "M": 4, "RFM": 144, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA VITA S.A.", "R": 1, "F": 4, "M": 4, "RFM": 144, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA UNION LTDA.", "R": 1, "F": 4, "M": 4, "RFM": 144, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA VALORE COMERCIAL S.A.S.", "R": 1, "F": 4, "M": 2, "RFM": 142, "segmento": "Prospectos Inactivos"}, {"cliente": "ALIANZA PROTEK LTDA.", "R": 1, "F": 3, "M": 5, "RFM": 135, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA UNION E.S.P.", "R": 1, "F": 3, "M": 5, "RFM": 135, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA APEX & ASOCIADOS S.A.", "R": 1, "F": 3, "M": 4, "RFM": 134, "segmento": "Prospectos Inactivos"}, {"cliente": "AGROPECUARIA FUTURA S.A.S.", "R": 1, "F": 3, "M": 4, "RFM": 134, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA ENLACE & ASOCIADOS S.A.", "R": 1, "F": 3, "M": 4, "RFM": 134, "segmento": "Prospectos Inactivos"}, {"cliente": "HORIZONTE SOLUTIONS S.A.S.", "R": 1, "F": 3, "M": 4, "RFM": 134, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA LINEA MÉDICA S.A.S.", "R": 1, "F": 3, "M": 4, "RFM": 134, "segmento": "Prospectos Inactivos"}, {"cliente": "SERVICIOS NEXUS FINANCIERA E.S.P.", "R": 1, "F": 3, "M": 3, "RFM": 133, "segmento": "Prospectos Inactivos"}, {"cliente": "RED LOGIX LOGÍSTICA S.A.", "R": 1, "F": 3, "M": 3, "RFM": 133, "segmento": "Prospectos Inactivos"}, {"cliente": "SISTEMAS OMEGA LTDA.", "R": 1, "F": 3, "M": 3, "RFM": 133, "segmento": "Prospectos Inactivos"}, {"cliente": "INDUSTRIAS OPTIMA LTDA.", "R": 1, "F": 3, "M": 3, "RFM": 133, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA ORIENTE PROYECTOS S.A.S.", "R": 1, "F": 3, "M": 3, "RFM": 133, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA VALORE LICORES S.A.", "R": 1, "F": 3, "M": 3, "RFM": 133, "segmento": "Prospectos Inactivos"}, {"cliente": "INVERSIONES CENTRAL EDUCATIVA E.S.P.", "R": 1, "F": 3, "M": 2, "RFM": 132, "segmento": "Prospectos Inactivos"}, {"cliente": "HOSPITAL ANDINA S.A.S.", "R": 1, "F": 3, "M": 2, "RFM": 132, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA METRO S.A.", "R": 1, "F": 3, "M": 2, "RFM": 132, "segmento": "Prospectos Inactivos"}, {"cliente": "INTEGRAL ORIENTE FINANCIERA LTDA.", "R": 1, "F": 3, "M": 1, "RFM": 131, "segmento": "Prospectos Inactivos"}, {"cliente": "CORPORACIÓN ORIENTE FINANCIERA E.S.P.", "R": 1, "F": 3, "M": 1, "RFM": 131, "segmento": "Prospectos Inactivos"}, {"cliente": "SERVICIOS LOGIX FINANCIERA LTDA.", "R": 1, "F": 3, "M": 1, "RFM": 131, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA PRAXIS ENERGÉTICA S.A.S.", "R": 1, "F": 2, "M": 4, "RFM": 124, "segmento": "Prospectos Inactivos"}, {"cliente": "AUTOMOTRIZ PACÍFICO LTDA.", "R": 1, "F": 2, "M": 3, "RFM": 123, "segmento": "Prospectos Inactivos"}, {"cliente": "ANDES SERVICES LTDA.", "R": 1, "F": 2, "M": 3, "RFM": 123, "segmento": "Prospectos Inactivos"}, {"cliente": "NORTE DYNAMICS S.A.", "R": 1, "F": 2, "M": 3, "RFM": 123, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA DELTA & ASOCIADOS S.A.S.", "R": 1, "F": 2, "M": 3, "RFM": 123, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSULTORA LINEA COMERCIAL S.A.", "R": 1, "F": 2, "M": 2, "RFM": 122, "segmento": "Prospectos Inactivos"}, {"cliente": "ALFA SERVICES S.A.S", "R": 1, "F": 2, "M": 2, "RFM": 122, "segmento": "Prospectos Inactivos"}, {"cliente": "CORPORACIÓN EDUCATIVA NUEVA ANDINA", "R": 1, "F": 2, "M": 2, "RFM": 122, "segmento": "Prospectos Inactivos"}, {"cliente": "GRUPO VITA MINERA S.A.S.", "R": 1, "F": 2, "M": 1, "RFM": 121, "segmento": "Prospectos Inactivos"}, {"cliente": "ALTA CONSULTING S.A.", "R": 1, "F": 2, "M": 1, "RFM": 121, "segmento": "Prospectos Inactivos"}, {"cliente": "ALIANZA CORDIAL COMERCIAL S.A.S.", "R": 1, "F": 2, "M": 1, "RFM": 121, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA DELTA LOGÍSTICA E.S.P.", "R": 1, "F": 2, "M": 1, "RFM": 121, "segmento": "Prospectos Inactivos"}, {"cliente": "SABANA DYNAMICS S.A.S", "R": 1, "F": 2, "M": 1, "RFM": 121, "segmento": "Prospectos Inactivos"}, {"cliente": "FIRMA CONSULTING S.A.S.", "R": 1, "F": 2, "M": 1, "RFM": 121, "segmento": "Prospectos Inactivos"}, {"cliente": "SERVICIOS VALORE AGROINDUSTRIAL E.S.P.", "R": 1, "F": 1, "M": 5, "RFM": 115, "segmento": "Prospectos Inactivos"}, {"cliente": "SERVICIOS CARIBE S.A.S", "R": 1, "F": 1, "M": 4, "RFM": 114, "segmento": "Prospectos Inactivos"}, {"cliente": "INDUSTRIAS NORTE E.S.P.", "R": 1, "F": 1, "M": 4, "RFM": 114, "segmento": "Prospectos Inactivos"}, {"cliente": "PROCESOS NOVA FINANCIERA S.A.", "R": 1, "F": 1, "M": 3, "RFM": 113, "segmento": "Prospectos Inactivos"}, {"cliente": "PROCESADORA AGRÍCOLA FIRMA S.A.", "R": 1, "F": 1, "M": 3, "RFM": 113, "segmento": "Prospectos Inactivos"}, {"cliente": "APEX CONNECT S.A.S", "R": 1, "F": 1, "M": 3, "RFM": 113, "segmento": "Prospectos Inactivos"}, {"cliente": "SUR CAPITAL S.A.S", "R": 1, "F": 1, "M": 2, "RFM": 112, "segmento": "Prospectos Inactivos"}, {"cliente": "ALTA SERVICES LTDA.", "R": 1, "F": 1, "M": 2, "RFM": 112, "segmento": "Prospectos Inactivos"}, {"cliente": "TECNOLOGÍA GLOBAL LOGÍSTICA S.A.", "R": 1, "F": 1, "M": 2, "RFM": 112, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA CORE COMERCIAL S.A.S.", "R": 1, "F": 1, "M": 2, "RFM": 112, "segmento": "Prospectos Inactivos"}, {"cliente": "AUTOMOTRIZ PRIME S.A.S.", "R": 1, "F": 1, "M": 2, "RFM": 112, "segmento": "Prospectos Inactivos"}, {"cliente": "COMERCIALIZADORA CENTRAL E.S.P.", "R": 1, "F": 1, "M": 2, "RFM": 112, "segmento": "Prospectos Inactivos"}, {"cliente": "SIERRA SOLUTIONS LTDA.", "R": 1, "F": 1, "M": 2, "RFM": 112, "segmento": "Prospectos Inactivos"}, {"cliente": "INDUSTRIAS CORE FINANCIERA E.S.P.", "R": 1, "F": 1, "M": 2, "RFM": 112, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA ENLACE LTDA.", "R": 1, "F": 1, "M": 2, "RFM": 112, "segmento": "Prospectos Inactivos"}, {"cliente": "INTEGRAL VALORE S.A.S", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "SOLUCIONES IMPULSO S.A.S.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "GANADERA ALTA S.A.S.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA ALTA COMERCIAL S.A.S.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "ALIANZA ANDES INDUSTRIAL LTDA.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "INDUSTRIAS METRO S.A.S.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "CONSTRUCTORA SIERRA PROYECTOS S.A.S.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "NEXUS GROUP LTDA.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA DELTA LICORES S.A.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA SUR BEBIDAS S.A.S.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "DISTRIBUIDORA SIERRA LOGÍSTICA S.A.S.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "CORPORACIÓN CENTRAL TEXTIL S.A.S.", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}, {"cliente": "SISTEMAS CAPITA S.A.S", "R": 1, "F": 1, "M": 1, "RFM": 111, "segmento": "Prospectos Inactivos"}], "seg_stats": {"Socios Estratégicos": {"count": 76, "avg_r": 5.0, "avg_f": 3.57, "avg_m": 3.42, "avg_rfm": 539.1}, "Clientes Corporativos Fieles": {"count": 76, "avg_r": 4.0, "avg_f": 3.78, "avg_m": 3.54, "avg_rfm": 441.3}, "Cuentas en Alerta": {"count": 76, "avg_r": 3.0, "avg_f": 2.78, "avg_m": 2.66, "avg_rfm": 330.4}, "Nuevos Aliados": {"count": 76, "avg_r": 2.0, "avg_f": 2.53, "avg_m": 2.75, "avg_rfm": 228.0}, "Prospectos Inactivos": {"count": 76, "avg_r": 1.0, "avg_f": 2.36, "avg_m": 2.63, "avg_rfm": 126.2}}, "segs_order": ["Socios Estratégicos", "Clientes Corporativos Fieles", "Cuentas en Alerta", "Nuevos Aliados", "Prospectos Inactivos"]};
+
+const CAT_COLORS = {
+  'Prendas Publicitarias':'#c8401a',
+  'Dotaciones Industriales - Uniformes':'#3d6fb5',
+  'Dotaciones Administrativas Uniformes':'#3a8c6e',
+  'Dotaciones Médicas y hospitalarias, Uniformes':'#9b59b6',
+};
+const SEG_COLORS = {
+  'Socios Estratégicos':'#c8401a',
+  'Clientes Corporativos Fieles':'#d4882a',
+  'Cuentas en Alerta':'#3a8c6e',
+  'Nuevos Aliados':'#3d6fb5',
+  'Prospectos Inactivos':'#8a7a6e',
+};
+const SEG_SCORES = {
+  'Socios Estratégicos':'555–511',
+  'Clientes Corporativos Fieles':'455–411',
+  'Cuentas en Alerta':'355–311',
+  'Nuevos Aliados':'255–211',
+  'Prospectos Inactivos':'≤155',
+};
+const SEG_ACTION = {
+  'Socios Estratégicos':'Fidelizar & Premiar',
+  'Clientes Corporativos Fieles':'VIP / Upsell',
+  'Cuentas en Alerta':'Reactivar urgente',
+  'Nuevos Aliados':'Nutrir & Desarrollar',
+  'Prospectos Inactivos':'Campaña Win-Back',
+};
+
+const fmt = v => '$' + Math.round(v).toLocaleString('es-CO');
+const fmtM = v => '$' + (v/1e6).toFixed(1) + 'M';
+const fmtK = v => v >= 1000 ? (v/1000).toFixed(1)+'K' : v;
+const pct = (v,t) => ((v/t)*100).toFixed(1)+'%';
+
+const tip = document.getElementById('tooltip');
+function showTip(e, html){ tip.style.opacity='1'; tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-10)+'px'; tip.innerHTML=html; }
+function hideTip(){ tip.style.opacity='0'; }
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+let renderedTabs = new Set();
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const id = tab.dataset.tab;
+    document.getElementById('tab-'+id).classList.add('active');
+    if (!renderedTabs.has(id)) { renderedTabs.add(id); initTab(id); }
+  });
+});
+
+function initTab(id){
+  if (id === 'ventas') initVentas();
+  if (id === 'categorias') initCategorias();
+  if (id === 'productos') initProductos();
+  if (id === 'clientes') initClientes();
+  if (id === 'rfm') initRFM();
+  if (id === 'funnel') initFunnel();
+  if (id === 'funnel') initFunnel();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function makeBars(container, items, maxVal, nameKey, valKey, colorFn, fmtFn, nameClass='') {
+  container.innerHTML = '';
+  items.forEach(item => {
+    const w = ((item[valKey]/maxVal)*100).toFixed(1);
+    const div = document.createElement('div'); div.className = 'bar-row';
+    div.innerHTML = `<div class="bar-name ${nameClass}" title="${item[nameKey]}">${item[nameKey]}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:${colorFn(item)}" data-w="${w}"></div></div>
+      <div class="bar-amt">${fmtFn(item[valKey])}</div>`;
+    container.appendChild(div);
+  });
+  setTimeout(() => container.querySelectorAll('.bar-fill').forEach(b => b.style.width = b.dataset.w + '%'), 80);
+}
+
+function makeTrendSVG(svgId, data, yKey, color='#c8401a', height=200) {
+  const svgEl = document.getElementById(svgId);
+  if (!svgEl) return;
+  const W = svgEl.clientWidth || svgEl.parentElement.clientWidth || 500;
+  const H = height;
+  const mg = {top:16, right:20, bottom:36, left:72};
+  const iw = W - mg.left - mg.right, ih = H - mg.top - mg.bottom;
+
+  svgEl.setAttribute('height', H);
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const svg = d3.select('#'+svgId);
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${mg.left},${mg.top})`);
+
+  const xs = d3.scalePoint().domain(data.map(d=>String(d.anio))).range([0,iw]).padding(.3);
+  const ymax = d3.max(data, d=>d[yKey]) * 1.12;
+  const ys = d3.scaleLinear().domain([0, ymax]).range([ih, 0]);
+
+  g.append('g').selectAll('.gl').data(ys.ticks(4)).enter().append('line')
+    .attr('class','grid-line').attr('x1',0).attr('x2',iw)
+    .attr('y1',d=>ys(d)).attr('y2',d=>ys(d));
+
+  g.append('g').attr('class','axis-x').attr('transform',`translate(0,${ih})`)
+    .call(d3.axisBottom(xs).tickSize(3));
+  g.append('g').attr('class','axis-y')
+    .call(d3.axisLeft(ys).ticks(4).tickFormat(d=>fmtM(d)));
+
+  const line = d3.line().x(d=>xs(String(d.anio))).y(d=>ys(d[yKey])).curve(d3.curveMonotoneX);
+
+  g.append('path').datum(data).attr('fill','none').attr('stroke',color)
+    .attr('stroke-width',2.5).attr('d',line);
+
+  // Area
+  const area = d3.area().x(d=>xs(String(d.anio))).y0(ih).y1(d=>ys(d[yKey])).curve(d3.curveMonotoneX);
+  g.append('path').datum(data).attr('fill',color).attr('opacity',.08).attr('d',area);
+
+  g.selectAll('.dot').data(data).enter().append('circle')
+    .attr('cx',d=>xs(String(d.anio))).attr('cy',d=>ys(d[yKey]))
+    .attr('r',5).attr('fill',color).attr('stroke','#fff').attr('stroke-width',2)
+    .on('mousemove',(e,d)=>showTip(e,`<div class="tt-name">${d.anio}</div>${fmt(d[yKey])}`))
+    .on('mouseleave',hideTip);
+}
+
+function makeGroupedBarSVG(svgId, data, years, colorFn, height=220) {
+  const svgEl = document.getElementById(svgId);
+  if (!svgEl) return;
+  const W = svgEl.clientWidth || svgEl.parentElement.clientWidth || 600;
+  const H = height;
+  const mg = {top:12, right:16, bottom:40, left:72};
+  const iw = W - mg.left - mg.right, ih = H - mg.top - mg.bottom;
+
+  svgEl.setAttribute('height', H);
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const svg = d3.select('#'+svgId); svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform',`translate(${mg.left},${mg.top})`);
+
+  const cats = data.map(d=>d.categoria);
+  const xs0 = d3.scaleBand().domain(cats).range([0,iw]).paddingInner(.25).paddingOuter(.1);
+  const xs1 = d3.scaleBand().domain(years.map(String)).range([0,xs0.bandwidth()]).padding(.08);
+  const ymax = d3.max(data, d => d3.max(years, y => d[y]||0)) * 1.12;
+  const ys = d3.scaleLinear().domain([0,ymax]).range([ih,0]);
+
+  g.append('g').selectAll('.gl').data(ys.ticks(4)).enter().append('line')
+    .attr('class','grid-line').attr('x1',0).attr('x2',iw)
+    .attr('y1',d=>ys(d)).attr('y2',d=>ys(d));
+
+  g.append('g').attr('class','axis-x').attr('transform',`translate(0,${ih})`)
+    .call(d3.axisBottom(xs0).tickFormat(d=>d.split(' ')[0]+'…'));
+  g.append('g').attr('class','axis-y')
+    .call(d3.axisLeft(ys).ticks(4).tickFormat(d=>fmtM(d)));
+
+  const grp = g.selectAll('.grp').data(data).enter().append('g')
+    .attr('transform', d=>`translate(${xs0(d.categoria)},0)`);
+
+  years.forEach((y,i) => {
+    grp.append('rect')
+      .attr('x', xs1(String(y))).attr('width', xs1.bandwidth())
+      .attr('y', d=>ys(d[y]||0)).attr('height', d=>ih-ys(d[y]||0))
+      .attr('fill', Object.values(CAT_COLORS)[i % 4]).attr('opacity',.85)
+      .on('mousemove',(e,d)=>showTip(e,`<div class="tt-name">${d.categoria}</div>${y}: ${fmt(d[y]||0)}`))
+      .on('mouseleave',hideTip);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 0: RESUMEN (auto-init)
+// ═══════════════════════════════════════════════════════════════════════════════
+(function initResumen(){
+  const kpis = [
+    {lbl:'Ventas Totales', val:fmtM(D.kpis.total_ventas), sub:'Ene 2022 – Feb 2026', c:'#c8401a'},
+    {lbl:'Unidades Vendidas', val:fmtK(D.kpis.total_qty), sub:'Total prendas / artículos', c:'#3d6fb5'},
+    {lbl:'Clientes Únicos', val:D.kpis.total_clientes, sub:'Base activa analizada', c:'#3a8c6e'},
+    {lbl:'Transacciones', val:D.kpis.total_tx.toLocaleString(), sub:'Líneas de pedido', c:'#9b59b6'},
+  ];
+  const kr = document.getElementById('kpi-resumen');
+  kpis.forEach(k=>{
+    const d=document.createElement('div'); d.className='kpi'; d.style.setProperty('--c',k.c);
+    d.innerHTML=`<div class="kpi-lbl">${k.lbl}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div>`;
+    kr.appendChild(d);
+  });
+
+  makeTrendSVG('chart-trend-resumen', D.trend, 'ventas', '#c8401a', 200);
+
+  // Donut
+  const cats = Object.keys(CAT_COLORS);
+  const catTotals = cats.map(c=>({cat:c, v:D.ventas_cat[c]?.ventas||0}));
+  const totalV = catTotals.reduce((a,b)=>a+b.v,0);
+  const svgD = d3.select('#chart-donut');
+  const size = 220; const r = 80; const ir = 50;
+  svgD.attr('viewBox',`0 0 ${size} ${size}`);
+  const arc = d3.arc().innerRadius(ir).outerRadius(r);
+  const pie = d3.pie().value(d=>d.v).sort(null);
+  const arcs = pie(catTotals);
+  const gD = svgD.append('g').attr('transform',`translate(${size/2},${size/2})`);
+  gD.selectAll('path').data(arcs).enter().append('path')
+    .attr('d',arc).attr('fill',d=>CAT_COLORS[d.data.cat]).attr('stroke','#fff').attr('stroke-width',2)
+    .on('mousemove',(e,d)=>showTip(e,`<div class="tt-name">${d.data.cat.split(' ')[0]}</div>${fmtM(d.data.v)}<br>${pct(d.data.v,totalV)}`))
+    .on('mouseleave',hideTip);
+  gD.append('text').attr('text-anchor','middle').attr('dy','-.3em')
+    .style('font-size','11px').style('font-family','IBM Plex Mono,monospace').style('fill','#7a7268').text('Total');
+  gD.append('text').attr('text-anchor','middle').attr('dy','1em')
+    .style('font-size','13px').style('font-weight','700').style('fill','#1a1714').text(fmtM(totalV));
+
+  const ld = document.getElementById('legend-donut');
+  cats.forEach(c=>{
+    const el=document.createElement('div'); el.className='legend-item';
+    el.innerHTML=`<div class="legend-dot" style="background:${CAT_COLORS[c]}"></div><span style="font-size:10px">${c.split(' ')[0]}…</span>`;
+    el.title=c; ld.appendChild(el);
+  });
+
+  // Top prods
+  const topP = D.top_prods.slice(0,10);
+  const maxP = topP[0].ventas;
+  makeBars(document.getElementById('bars-top-prods-resumen'), topP, maxP, 'producto', 'ventas',
+    d=>CAT_COLORS[d.categoria]||'#c8401a', fmtM);
+
+  // Top clientes
+  const topC = D.top_clientes.slice(0,10);
+  const maxC = topC[0].ventas;
+  makeBars(document.getElementById('bars-top-cli-resumen'), topC, maxC, 'cliente', 'ventas',
+    ()=>'#3d6fb5', fmtM, 'bar-name-lg');
+
+  renderedTabs.add('resumen');
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 2: VENTAS
+// ═══════════════════════════════════════════════════════════════════════════════
+function initVentas(){
+  const years = D.kpis.years;
+  let selYear = 'all';
+
+  // Filter bar
+  const fb = document.getElementById('fbar-ventas');
+  [{id:'all',lbl:'Todos los años'}, ...years.map(y=>({id:String(y),lbl:String(y)}))].forEach(item=>{
+    const b=document.createElement('button'); b.className='fchip'+(item.id==='all'?' on':'');
+    b.textContent=item.lbl; b.dataset.y=item.id;
+    b.addEventListener('click',()=>{
+      fb.querySelectorAll('.fchip').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+      selYear=item.id; renderVentas(selYear);
+    });
+    fb.appendChild(b);
+  });
+
+  function renderVentas(yf){
+    const data = yf==='all' ? D.trend : D.trend.filter(d=>String(d.anio)===yf);
+    const totalV = data.reduce((a,b)=>a+b.ventas,0);
+    const totalQ = data.reduce((a,b)=>a+b.cantidad,0);
+    const totalCli = yf==='all' ? D.kpis.total_clientes : (data[0]?.clientes||0);
+    const totalTx = data.reduce((a,b)=>a+b.transacciones,0);
+
+    const kr = document.getElementById('kpi-ventas'); kr.innerHTML='';
+    [{lbl:'Ventas',val:fmtM(totalV),sub:'Valor bruto acumulado',c:'#c8401a'},
+     {lbl:'Unidades',val:fmtK(totalQ),sub:'Artículos despachados',c:'#3d6fb5'},
+     {lbl:'Clientes',val:totalCli,sub:'Activos en período',c:'#3a8c6e'},
+     {lbl:'Transacciones',val:totalTx.toLocaleString(),sub:'Líneas de pedido',c:'#9b59b6'},
+    ].forEach(k=>{
+      const d=document.createElement('div'); d.className='kpi'; d.style.setProperty('--c',k.c);
+      d.innerHTML=`<div class="kpi-lbl">${k.lbl}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div>`;
+      kr.appendChild(d);
+    });
+
+    makeTrendSVG('chart-trend-ventas', D.trend, 'ventas', '#c8401a', 220);
+
+    // Bars by category
+    const catData = Object.keys(CAT_COLORS).map(c=>{
+      const v = yf==='all' ? (D.ventas_cat[c]?.ventas||0) :
+        (D.cat_year_matrix.find(r=>r.categoria===c)?.[yf]||0);
+      return {categoria:c, ventas:v};
+    }).sort((a,b)=>b.ventas-a.ventas);
+    const maxCat = catData[0].ventas;
+    makeBars(document.getElementById('bars-cat-ventas'), catData, maxCat, 'categoria','ventas',
+      d=>CAT_COLORS[d.categoria], fmtM, 'bar-name-lg');
+
+    // Table
+    const tb = document.getElementById('table-ventas'); tb.innerHTML=`
+      <thead><tr><th>Año</th><th class="right">Ventas</th><th class="right">Unidades</th><th class="right">Clientes</th><th class="right">Trans.</th></tr></thead>
+      <tbody>${D.trend.map(r=>`<tr style="${String(r.anio)===yf?'background:#fff8f6':''}">
+        <td class="mono">${r.anio}</td>
+        <td class="mono right">${fmtM(r.ventas)}</td>
+        <td class="mono right">${fmtK(r.cantidad)}</td>
+        <td class="mono right">${r.clientes}</td>
+        <td class="mono right">${r.transacciones}</td>
+      </tr>`).join('')}</tbody>`;
+  }
+  renderVentas('all');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 3: CATEGORÍAS
+// ═══════════════════════════════════════════════════════════════════════════════
+function initCategorias(){
+  const cats = Object.keys(CAT_COLORS);
+  let selCat = 'all';
+
+  const fb = document.getElementById('fbar-cat');
+  [{id:'all',lbl:'Todas'}, ...cats.map(c=>({id:c,lbl:c.split(' ')[0]}))].forEach(item=>{
+    const b=document.createElement('button'); b.className='fchip'+(item.id==='all'?' on':'');
+    b.textContent=item.lbl; b.title=item.id; b.dataset.c=item.id;
+    b.addEventListener('click',()=>{
+      fb.querySelectorAll('.fchip').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+      selCat=item.id; renderCat(selCat);
+    });
+    fb.appendChild(b);
+  });
+
+  function renderCat(cf){
+    const activeCats = cf==='all' ? cats : [cf];
+    const totalV = activeCats.reduce((a,c)=>a+(D.ventas_cat[c]?.ventas||0),0);
+    const totalQ = activeCats.reduce((a,c)=>a+(D.ventas_cat[c]?.cantidad||0),0);
+    const totalCli = cf==='all' ? D.kpis.total_clientes : (D.ventas_cat[cf]?.clientes||0);
+
+    const kr=document.getElementById('kpi-cat'); kr.innerHTML='';
+    [{lbl:'Ventas Categoría',val:fmtM(totalV),sub:cf==='all'?'Todas las categorías':cf,c:CAT_COLORS[cf]||'#c8401a'},
+     {lbl:'Unidades',val:fmtK(totalQ),sub:'Artículos vendidos',c:'#3d6fb5'},
+     {lbl:'Clientes',val:totalCli,sub:'Clientes que compraron',c:'#3a8c6e'},
+     {lbl:'Participación',val:cf==='all'?'100%':pct(totalV,D.trend.reduce((a,b)=>a+b.ventas,0)),sub:'Del total de ventas',c:'#9b59b6'},
+    ].forEach(k=>{
+      const d=document.createElement('div'); d.className='kpi'; d.style.setProperty('--c',k.c);
+      d.innerHTML=`<div class="kpi-lbl">${k.lbl}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div>`;
+      kr.appendChild(d);
+    });
+
+    // Grouped bar chart
+    const svgEl = document.getElementById('chart-cat-trend');
+    makeGroupedBarSVG('chart-cat-trend',
+      cf==='all' ? D.cat_year_matrix : D.cat_year_matrix.filter(r=>r.categoria===cf),
+      D.kpis.years, ()=>'#c8401a', 240);
+
+    // Dist bars
+    const distData = cats.map(c=>({categoria:c, ventas:D.ventas_cat[c]?.ventas||0}))
+      .sort((a,b)=>b.ventas-a.ventas);
+    makeBars(document.getElementById('bars-cat-dist'), distData, distData[0].ventas,
+      'categoria','ventas', d=>CAT_COLORS[d.categoria], fmtM, 'bar-name-lg');
+
+    // Matrix table
+    const tb=document.getElementById('table-cat-matrix');
+    tb.innerHTML=`<thead><tr><th>Categoría</th>${D.kpis.years.map(y=>`<th class="right">${y}</th>`).join('')}<th class="right">Total</th></tr></thead>
+      <tbody>${D.cat_year_matrix.map(r=>`<tr style="${r.categoria===cf&&cf!=='all'?'background:#fff8f6':''}">
+        <td style="color:${CAT_COLORS[r.categoria]};font-weight:600;font-size:11px;">${r.categoria}</td>
+        ${D.kpis.years.map(y=>`<td class="mono right">${fmtM(r[y]||0)}</td>`).join('')}
+        <td class="mono right" style="font-weight:700">${fmtM(r.total)}</td>
+      </tr>`).join('')}</tbody>`;
+  }
+  renderCat('all');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 4: PRODUCTOS
+// ═══════════════════════════════════════════════════════════════════════════════
+function initProductos(){
+  const cats = Object.keys(CAT_COLORS);
+  let selCat = 'all';
+
+  const fb = document.getElementById('fbar-prod');
+  [{id:'all',lbl:'Todas'}, ...cats.map(c=>({id:c,lbl:c.split(' ')[0]}))].forEach(item=>{
+    const b=document.createElement('button'); b.className='fchip'+(item.id==='all'?' on':'');
+    b.textContent=item.lbl; b.title=item.id;
+    b.addEventListener('click',()=>{
+      fb.querySelectorAll('.fchip').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+      selCat=item.id; renderProds(selCat);
+    });
+    fb.appendChild(b);
+  });
+
+  function renderProds(cf){
+    const prods = cf==='all' ? D.top_prods : D.top_prods.filter(p=>p.categoria===cf);
+    const desc = document.getElementById('desc-prod');
+    if(cf==='all'){
+      desc.innerHTML=`Mostrando <strong>${prods.length}</strong> productos más vendidos de todas las categorías. 
+        El producto líder es <strong>${prods[0]?.producto}</strong> con ventas de <strong>${fmtM(prods[0]?.ventas||0)}</strong>.`;
+    } else {
+      desc.innerHTML=`Categoría seleccionada: <strong>${cf}</strong>. 
+        ${prods.length > 0 ? `Producto líder: <strong>${prods[0]?.producto}</strong> — ${fmtM(prods[0]?.ventas||0)}.` : 'Sin productos en el top 20 para esta categoría.'}`;
+    }
+    const maxV = prods.length ? prods[0].ventas : 1;
+    const maxQ = prods.length ? Math.max(...prods.map(p=>p.cantidad)) : 1;
+    const prodsSortQ = [...prods].sort((a,b)=>b.cantidad-a.cantidad);
+    makeBars(document.getElementById('bars-prods'), prods, maxV, 'producto','ventas',
+      d=>CAT_COLORS[d.categoria]||'#c8401a', fmtM);
+    makeBars(document.getElementById('bars-prods-qty'), prodsSortQ, maxQ, 'producto','cantidad',
+      d=>CAT_COLORS[d.categoria]||'#3d6fb5', v=>fmtK(v)+' u.');
+  }
+  renderProds('all');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 5: CLIENTES
+// ═══════════════════════════════════════════════════════════════════════════════
+function initClientes(){
+  const rfmMap = {};
+  D.rfm.forEach(r=>rfmMap[r.cliente]=r);
+
+  function renderClientes(){
+    const top20 = D.top_clientes.slice(0,20);
+    const max = top20[0].ventas;
+    makeBars(document.getElementById('bars-clientes'), top20, max, 'cliente','ventas',
+      ()=>'#3d6fb5', fmtM, 'bar-name-lg');
+
+    // Seg dist for top clients
+    const segCounts = {};
+    D.top_clientes.slice(0,30).forEach(c=>{
+      const s = rfmMap[c.cliente]?.segmento || 'Sin datos';
+      segCounts[s] = (segCounts[s]||0)+1;
+    });
+    const segData = Object.entries(segCounts).map(([s,n])=>({seg:s,n})).sort((a,b)=>b.n-a.n);
+    const cr = document.getElementById('cli-rfm-dist'); cr.innerHTML='';
+    const maxN = segData[0]?.n||1;
+    segData.forEach(sd=>{
+      const div=document.createElement('div'); div.className='bar-row';
+      div.innerHTML=`<div class="bar-name bar-name-lg" style="color:${SEG_COLORS[sd.seg]||'#888'};font-weight:600">${sd.seg||'Sin datos'}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:0%;background:${SEG_COLORS[sd.seg]||'#888'}" data-w="${(sd.n/maxN*100).toFixed(1)}"></div></div>
+        <div class="bar-amt">${sd.n} clientes</div>`;
+      cr.appendChild(div);
+    });
+    setTimeout(()=>cr.querySelectorAll('.bar-fill').forEach(b=>b.style.width=b.dataset.w+'%'),80);
+
+    // Full table
+    const tb = document.getElementById('table-clientes');
+    tb.innerHTML=`<thead><tr><th>#</th><th>Cliente</th><th class="right">Ventas</th><th class="right">Unidades</th><th>Segmento RFM</th><th class="right">Score</th></tr></thead>
+      <tbody>${D.top_clientes.map((c,i)=>{
+        const rf = rfmMap[c.cliente];
+        const seg = rf?.segmento||'Sin datos';
+        const col = SEG_COLORS[seg]||'#888';
+        return `<tr>
+          <td class="mono" style="color:var(--muted2)">${i+1}</td>
+          <td style="font-weight:500;max-width:280px">${c.cliente}</td>
+          <td class="mono right">${fmtM(c.ventas)}</td>
+          <td class="mono right">${fmtK(c.cantidad)}</td>
+          <td><span class="badge" style="background:${col}18;color:${col}">${seg}</span></td>
+          <td class="mono right" style="font-weight:700;color:${col}">${rf?.RFM||'—'}</td>
+        </tr>`;
+      }).join('')}</tbody>`;
+
+    // KPIs
+    const kr=document.getElementById('kpi-cli'); kr.innerHTML='';
+    [{lbl:'Clientes Totales',val:D.kpis.total_clientes,sub:'Base analizada',c:'#c8401a'},
+     {lbl:'Cliente #1',val:D.top_clientes[0].cliente.split(' ')[0]+'…',sub:fmtM(D.top_clientes[0].ventas),c:'#3d6fb5'},
+     {lbl:'Socios Estratégicos',val:D.seg_stats['Socios Estratégicos'].count,sub:'Score 555–511',c:SEG_COLORS['Socios Estratégicos']},
+     {lbl:'En Riesgo / Inactivos',val:(D.seg_stats['Cuentas en Alerta'].count+D.seg_stats['Prospectos Inactivos'].count),sub:'Requieren atención',c:SEG_COLORS['Prospectos Inactivos']},
+    ].forEach(k=>{
+      const d=document.createElement('div'); d.className='kpi'; d.style.setProperty('--c',k.c);
+      d.innerHTML=`<div class="kpi-lbl">${k.lbl}</div><div class="kpi-val" style="font-size:${k.val.toString().length>8?'16px':'26px'}">${k.val}</div><div class="kpi-sub">${k.sub}</div>`;
+      kr.appendChild(d);
+    });
+  }
+  renderClientes();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 6: RFM
+// ═══════════════════════════════════════════════════════════════════════════════
+function initRFM(){
+  const SEGS = D.segs_order;
+  let selSeg = 'all';
+
+  // Filter bar
+  const fb = document.getElementById('fbar-rfm');
+  [{id:'all',lbl:'Todos'}, ...SEGS.map(s=>({id:s,lbl:s}))].forEach(item=>{
+    const b=document.createElement('button'); b.className='fchip'+(item.id==='all'?' on':'');
+    b.textContent=item.lbl;
+    b.addEventListener('click',()=>{
+      fb.querySelectorAll('.fchip').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+      selSeg=item.id; renderRFMList(item.id); renderScatter(item.id);
+      document.querySelectorAll('.seg-card').forEach(c=>c.classList.toggle('on-card', c.dataset.seg===item.id));
+    });
+    fb.appendChild(b);
+  });
+
+  // Seg cards
+  const sc = document.getElementById('seg-cards');
+  const total = D.rfm.length;
+  SEGS.forEach(s=>{
+    const st = D.seg_stats[s];
+    const el=document.createElement('div'); el.className='seg-card'; el.dataset.seg=s;
+    el.style.setProperty('--c', SEG_COLORS[s]);
+    el.innerHTML=`<div class="sc-num">${st.count}</div>
+      <div class="sc-lbl">${s}</div>
+      <div class="sc-score">Score ${SEG_SCORES[s]}</div>
+      <div class="sc-pct">${pct(st.count,total)} del total</div>`;
+    el.addEventListener('click',()=>{
+      const v = selSeg===s ? 'all' : s;
+      fb.querySelectorAll('.fchip').forEach(x=>x.classList.remove('on'));
+      fb.querySelectorAll('.fchip')[SEGS.indexOf(s)+1]?.classList.add('on');
+      if(v==='all') fb.querySelectorAll('.fchip')[0].classList.add('on');
+      selSeg=v; renderRFMList(v); renderScatter(v);
+      document.querySelectorAll('.seg-card').forEach(c=>c.classList.toggle('on-card', c.dataset.seg===v));
+    });
+    sc.appendChild(el);
+  });
+
+  // Bars RFM
+  const barsData = SEGS.map(s=>({seg:s, count:D.seg_stats[s].count}));
+  const maxCount = Math.max(...barsData.map(b=>b.count));
+  const br = document.getElementById('bars-rfm'); br.innerHTML='';
+  barsData.forEach(b=>{
+    const div=document.createElement('div'); div.className='bar-row';
+    div.innerHTML=`<div class="bar-name" style="color:${SEG_COLORS[b.seg]};font-weight:600">${b.seg}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:${SEG_COLORS[b.seg]}" data-w="${(b.count/maxCount*100).toFixed(1)}"></div></div>
+      <div class="bar-amt">${b.count} clientes</div>`;
+    br.appendChild(div);
+  });
+  setTimeout(()=>br.querySelectorAll('.bar-fill').forEach(b=>b.style.width=b.dataset.w+'%'),80);
+
+  // Stats table
+  const tb=document.getElementById('table-rfm-stats');
+  tb.innerHTML=`<thead><tr><th>Segmento</th><th class="right">Clientes</th><th class="right">Avg R</th><th class="right">Avg F</th><th class="right">Avg M</th><th class="right">Avg RFM</th><th>Acción</th></tr></thead>
+    <tbody>${SEGS.map(s=>{
+      const st=D.seg_stats[s]; const col=SEG_COLORS[s];
+      return `<tr><td style="color:${col};font-weight:600;font-size:11px">${s}</td>
+        <td class="mono right">${st.count}</td>
+        <td class="mono right">${st.avg_r}</td><td class="mono right">${st.avg_f}</td>
+        <td class="mono right">${st.avg_m}</td><td class="mono right" style="font-weight:700;color:${col}">${st.avg_rfm}</td>
+        <td><span class="badge" style="background:${col}18;color:${col}">${SEG_ACTION[s]}</span></td>
+      </tr>`;
+    }).join('')}</tbody>`;
+
+  // SCATTER
+  function renderScatter(filter){
+    const el=document.getElementById('scatter-wrap'); el.innerHTML='';
+    const W = el.clientWidth || el.parentElement.clientWidth || 480;
+    const H = Math.min(Math.round(W*.75), 340);
+    const mg={top:12,right:14,bottom:40,left:38};
+    const iw=W-mg.left-mg.right, ih=H-mg.top-mg.bottom;
+
+    const svgS = d3.select('#scatter-wrap').append('svg')
+      .attr('width','100%').attr('height',H).attr('viewBox',`0 0 ${W} ${H}`);
+    const g=svgS.append('g').attr('transform',`translate(${mg.left},${mg.top})`);
+
+    const data = filter==='all' ? D.rfm : D.rfm.filter(r=>r.segmento===filter);
+    const xs=d3.scaleLinear().domain([.3,5.7]).range([0,iw]);
+    const ys=d3.scaleLinear().domain([.3,5.7]).range([ih,0]);
+    const rs=d3.scaleSqrt().domain([1,5]).range([4,16]);
+
+    g.append('g').selectAll('.gl').data([1,2,3,4,5]).enter().append('line')
+      .attr('class','grid-line').attr('x1',d=>xs(d)).attr('x2',d=>xs(d)).attr('y1',0).attr('y2',ih);
+    g.append('g').selectAll('.gl2').data([1,2,3,4,5]).enter().append('line')
+      .attr('class','grid-line').attr('x1',0).attr('x2',iw).attr('y1',d=>ys(d)).attr('y2',d=>ys(d));
+
+    g.append('g').attr('class','axis-x').attr('transform',`translate(0,${ih})`)
+      .call(d3.axisBottom(xs).ticks(5).tickFormat(d=>`R${d}`));
+    g.append('g').attr('class','axis-y')
+      .call(d3.axisLeft(ys).ticks(5).tickFormat(d=>`F${d}`));
+
+    const jitter = ()=>(Math.random()-.5)*.5;
+    g.selectAll('.dot-pt').data(data).enter().append('circle').attr('class','dot-pt')
+      .attr('cx',d=>xs(d.R+jitter())).attr('cy',d=>ys(d.F+jitter()))
+      .attr('r',d=>rs(d.M)).attr('fill',d=>SEG_COLORS[d.segmento]).attr('opacity',.7)
+      .attr('stroke',d=>SEG_COLORS[d.segmento]).attr('stroke-width',.4)
+      .on('mousemove',(e,d)=>showTip(e,`<div class="tt-name">${d.cliente}</div>${d.segmento}<br>RFM: ${d.RFM} · R:${d.R} F:${d.F} M:${d.M}`))
+      .on('mouseleave',hideTip);
+  }
+  renderScatter('all');
+
+  function renderRFMList(filter){
+    document.getElementById('rfm-list-title').textContent =
+      filter==='all' ? `Lista de clientes (${D.rfm.length})` : `${filter} — ${D.rfm.filter(r=>r.segmento===filter).length} clientes`;
+    const items = filter==='all' ? D.rfm : D.rfm.filter(r=>r.segmento===filter);
+    const sorted = [...items].sort((a,b)=>b.RFM-a.RFM);
+    const tb=document.getElementById('table-rfm-clients');
+    tb.innerHTML=`<thead><tr><th>Cliente</th><th class="right">Score RFM</th><th class="right">R</th><th class="right">F</th><th class="right">M</th><th>Segmento</th></tr></thead>
+      <tbody>${sorted.map(r=>{const col=SEG_COLORS[r.segmento];return`<tr>
+        <td style="font-weight:500">${r.cliente}</td>
+        <td class="mono right" style="font-weight:700;color:${col}">${r.RFM}</td>
+        <td class="mono right">${r.R}</td><td class="mono right">${r.F}</td><td class="mono right">${r.M}</td>
+        <td><span class="badge" style="background:${col}18;color:${col}">${r.segmento}</span></td>
+      </tr>`;}
+      ).join('')}</tbody>`;
+  }
+  renderRFMList('all');
+}
+</script>
+
+<!-- ════════════════════════════════════════════════════════
+     FUNNEL 4C's + 2R's — STYLES
+═══════════════════════════════════════════════════════════ -->
+<style>
+.fn-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;}
+.fn-bar-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.fn-chip{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:5px 12px;border-radius:100px;
+  border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
+.fn-chip:hover,.fn-chip.on{background:#c8401a;border-color:#c8401a;color:#fff;}
+.fn-btn-primary{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:5px 14px;border-radius:4px;
+  border:none;background:#c8401a;color:#fff;cursor:pointer;transition:background .15s;}
+.fn-btn-primary:hover{background:#a03214;}
+.fn-btn-ghost{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:5px 14px;border-radius:4px;
+  border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .15s;}
+.fn-btn-ghost:hover{background:var(--border);}
+.period-tabs{display:flex;gap:6px;margin-bottom:16px;}
+.ptab{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:5px 13px;border-radius:4px;
+  border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
+.ptab.on{background:var(--text);border-color:var(--text);color:#fff;}
+.fn-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px;}
+.fn-kpi{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:14px 16px;position:relative;overflow:hidden;}
+.fn-kpi::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--fkc);}
+.fn-kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--muted);}
+.fn-kpi-val{font-size:21px;font-weight:700;margin:4px 0 1px;letter-spacing:-1px;color:var(--fkc);}
+.fn-kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted2);}
+.fn-2col{display:grid;grid-template-columns:340px 1fr;gap:16px;margin-bottom:16px;align-items:start;}
+.fn-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.fn-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px;}
+.fn-ptitle{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.fn-ptitle::before{content:'';width:4px;height:4px;border-radius:50%;background:#c8401a;display:inline-block;}
+/* Funnel bars */
+.fn-stage-bar{border-radius:6px;cursor:pointer;margin-bottom:4px;transition:filter .15s,transform .1s;}
+.fn-stage-bar:hover{filter:brightness(1.08);transform:scaleY(1.03);}
+.fn-stage-inner{display:flex;align-items:center;gap:10px;padding:0 14px;height:100%;}
+.fn-stage-icon{font-size:15px;flex-shrink:0;}
+.fn-stage-name{font-size:11px;font-weight:700;color:#fff;flex:1;}
+.fn-stage-count{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:#fff;}
+.fn-stage-monto{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,.75);}
+.fn-conv-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.fn-conv-lbl{font-size:10px;font-weight:600;min-width:80px;}
+.fn-conv-track{flex:1;background:var(--border);border-radius:100px;height:6px;overflow:hidden;}
+.fn-conv-fill{height:100%;border-radius:100px;transition:width .9s cubic-bezier(.16,1,.3,1);}
+.fn-conv-pct{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);min-width:30px;text-align:right;}
+/* Pipeline table */
+.fn-tbl-wrap{overflow:auto;max-height:420px;}
+.fn-tbl{width:100%;border-collapse:collapse;font-size:11px;}
+.fn-tbl th{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.4px;text-transform:uppercase;
+  color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--surface);text-align:left;white-space:nowrap;}
+.fn-tbl td{padding:7px 10px;border-bottom:1px solid var(--border);}
+.fn-tbl tr:hover td{background:var(--surface2);}
+.fn-tbl tr:last-child td{border-bottom:none;}
+.fn-stg-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.fn-tag{display:inline-block;padding:2px 7px;border-radius:100px;font-size:8px;font-weight:700;letter-spacing:.3px;}
+/* Summary rows */
+.fn-sum-row{display:flex;justify-content:space-between;align-items:center;
+  padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.fn-sum-row:last-child{border-bottom:none;}
+.fn-sum-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);}
+.fn-sum-val{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:#c8401a;}
+/* Modal */
+.fn-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;
+  display:flex;align-items:center;justify-content:center;}
+.fn-modal-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:26px;min-width:480px;max-width:540px;box-shadow:0 16px 48px rgba(0,0,0,.3);}
+.fn-modal-box h3{font-size:14px;font-weight:700;margin-bottom:16px;color:var(--text);}
+.fn-form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.fn-form-row-1{margin-bottom:10px;}
+.fn-flbl{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.4px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+.fn-finput{width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:4px;
+  background:var(--surface2);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:10px;}
+.fn-finput:focus{outline:none;border-color:#c8401a;}
+.fn-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+/* Autocomplete */
+.ac-wrap{position:relative;}
+.ac-drop{display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  box-shadow:0 6px 24px rgba(0,0,0,.15);z-index:2000;max-height:280px;overflow-y:auto;}
+.ac-item{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;
+  border-bottom:1px solid var(--border);}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.ac-active{background:var(--accent-bg);}
+.ac-name{font-size:10px;font-weight:600;color:var(--text);}
+.ac-meta{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);margin-top:1px;}
+.ac-rfm{padding:2px 7px;border-radius:100px;font-size:8px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+.ac-status{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c8401a;margin-left:8px;}
+/* Client card */
+.cli-card{background:var(--accent-bg);border:1px solid #f5cfc4;border-radius:6px;
+  padding:10px 14px;margin-bottom:10px;display:none;}
+.cli-card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:6px 0;}
+.cli-cell{background:var(--surface);border-radius:4px;padding:5px 7px;text-align:center;}
+.cli-cell-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--muted);}
+.cli-cell-val{font-size:12px;font-weight:700;margin-top:1px;}
+.cli-tip{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c8401a;margin-top:4px;}
+@media(max-width:900px){
+  .fn-kpi-grid{grid-template-columns:repeat(3,1fr);}
+  .fn-2col{grid-template-columns:1fr;}
+  .fn-3col{grid-template-columns:1fr;}
+}
+</style>
+
+<!-- ════════════════════════════════════════════════════════
+     FUNNEL PAGE
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="tab-funnel">
+
+  <!-- Controls -->
+  <div class="fn-bar">
+    <span class="fn-bar-lbl">Segmento:</span>
+    <button class="fn-chip on" data-fseg="all">Todos</button>
+    <button class="fn-chip" data-fseg="Socios Estratégicos">⭐ Socios Est.</button>
+    <button class="fn-chip" data-fseg="Clientes Corporativos Fieles">🤝 Corp. Fieles</button>
+    <button class="fn-chip" data-fseg="Cuentas en Alerta">🔔 En Alerta</button>
+    <button class="fn-chip" data-fseg="Nuevos Aliados">🌱 Nuevos Aliados</button>
+    <button class="fn-chip" data-fseg="Prospectos Inactivos">🔄 Prospectos</button>
+    <div style="flex:1"></div>
+    <button class="fn-btn-primary" id="fnAddBtn">+ Agregar negocio</button>
+    <button class="fn-btn-ghost" id="fnExportBtn">↓ CSV</button>
+  </div>
+
+  <!-- Period tabs -->
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+    <div class="period-tabs">
+      <button class="ptab on" data-fperiod="weekly">Semana</button>
+      <button class="ptab" data-fperiod="monthly">Mes</button>
+      <button class="ptab" data-fperiod="quarterly">Trimestre</button>
+      <button class="ptab" data-fperiod="all">Todo</button>
+    </div>
+    <span id="fnPeriodLbl" style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted)"></span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="fn-kpi-grid" id="fnKpis"></div>
+
+  <!-- Main 2-col: Funnel visual | Pipeline table -->
+  <div class="fn-2col">
+
+    <!-- Left: funnel + conversions -->
+    <div class="fn-panel">
+      <div class="fn-ptitle">Funnel 4C's + 2R's</div>
+      <div id="fnFunnelBars"></div>
+      <div style="margin-top:14px;">
+        <div class="fn-ptitle">Tasas de conversión</div>
+        <div id="fnConvBars"></div>
+      </div>
+    </div>
+
+    <!-- Right: pipeline table -->
+    <div class="fn-panel" style="padding:0;">
+      <div style="padding:18px 18px 0;">
+        <div class="fn-ptitle" style="margin-bottom:0;">Pipeline de negocios
+          <span id="fnCountLbl" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted)"></span>
+        </div>
+      </div>
+      <div class="fn-tbl-wrap" style="margin-top:10px;">
+        <table class="fn-tbl">
+          <thead><tr>
+            <th>Cliente</th><th>Segmento</th><th>Etapa</th>
+            <th style="text-align:right">Monto</th><th>Asesor</th>
+            <th>Fecha</th><th>Próx. acción</th><th></th>
+          </tr></thead>
+          <tbody id="fnPipelineBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom: 3 time summaries -->
+  <div class="fn-3col">
+    <div class="fn-panel"><div class="fn-ptitle">Corte Semanal</div><div id="fnWeekly"></div></div>
+    <div class="fn-panel"><div class="fn-ptitle">Corte Mensual</div><div id="fnMonthly"></div></div>
+    <div class="fn-panel"><div class="fn-ptitle">Corte Trimestral</div><div id="fnQuarterly"></div></div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="fn-overlay" id="fnModal" style="display:none;">
+  <div class="fn-modal-box">
+    <h3 id="fnModalTitle">Agregar negocio al pipeline</h3>
+
+    <div class="fn-form-row-1">
+      <div class="fn-flbl">Cliente * <span class="ac-status" id="fnAcStatus"></span></div>
+      <div class="ac-wrap">
+        <input class="fn-finput" id="fnCliente" placeholder="Escribe para buscar cliente..." autocomplete="off"/>
+        <div class="ac-drop" id="fnAcDrop"></div>
+      </div>
+    </div>
+
+    <div class="cli-card" id="fnCliCard"></div>
+
+    <div class="fn-form-row">
+      <div>
+        <div class="fn-flbl">Segmento RFM *</div>
+        <select class="fn-finput" id="fnSegmento">
+          <option value="Socios Estratégicos">⭐ Socios Estratégicos</option>
+          <option value="Clientes Corporativos Fieles">🤝 Corp. Fieles</option>
+          <option value="Cuentas en Alerta">🔔 Cuentas en Alerta</option>
+          <option value="Nuevos Aliados">🌱 Nuevos Aliados</option>
+          <option value="Prospectos Inactivos">🔄 Prospectos Inactivos</option>
+        </select>
+      </div>
+      <div>
+        <div class="fn-flbl">Etapa del Funnel *</div>
+        <select class="fn-finput" id="fnEtapa">
+          <option value="1C">1C — Conocimiento</option>
+          <option value="2C">2C — Contacto</option>
+          <option value="3C">3C — Consideración</option>
+          <option value="4C">4C — Conversión</option>
+          <option value="R1">R1 — Recompra</option>
+          <option value="R2">R2 — Recomendación</option>
+        </select>
+      </div>
+    </div>
+    <div class="fn-form-row">
+      <div>
+        <div class="fn-flbl">Monto estimado ($COP) *</div>
+        <input class="fn-finput" id="fnMonto" type="number" placeholder="0" min="0"/>
+      </div>
+      <div>
+        <div class="fn-flbl">Asesor comercial</div>
+        <input class="fn-finput" id="fnAsesor" placeholder="Nombre asesor"/>
+      </div>
+    </div>
+    <div class="fn-form-row">
+      <div>
+        <div class="fn-flbl">Fecha de ingreso</div>
+        <input class="fn-finput" id="fnFecha" type="date"/>
+      </div>
+      <div>
+        <div class="fn-flbl">Próxima acción</div>
+        <input class="fn-finput" id="fnAccion" placeholder="Enviar propuesta, Llamada..."/>
+      </div>
+    </div>
+    <div class="fn-form-row-1">
+      <div class="fn-flbl">Notas</div>
+      <input class="fn-finput" id="fnNotas" placeholder="Observaciones..."/>
+    </div>
+    <div class="fn-modal-actions">
+      <button class="fn-btn-ghost" id="fnCancelBtn">Cancelar</button>
+      <button class="fn-btn-primary" id="fnSaveBtn">Guardar negocio</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     FUNNEL JS — single clean block, no conflicts
+═══════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+'use strict';
+
+// ── Data ────────────────────────────────────────────────────────────────────
+var FSTAGES=[
+  {id:'1C',name:'Conocimiento', icon:'📣',color:'#2E4FBF',desc:'All Media / Impactados',w:100},
+  {id:'2C',name:'Contacto',     icon:'📞',color:'#3D8BBF',desc:'Primer contacto hecho',  w:84},
+  {id:'3C',name:'Consideración',icon:'🤔',color:'#2E7D5E',desc:'Leads & propuestas',     w:70},
+  {id:'4C',name:'Conversión',   icon:'✅',color:'#C8401A',desc:'Negocio cerrado',         w:57},
+  {id:'R1',name:'Recompra',     icon:'❤️',color:'#D4882A',desc:'Interacción & fidelización',w:46},
+  {id:'R2',name:'Recomendación',icon:'⭐',color:'#9B59B6',desc:'Google / Referidos',      w:36}
+];
+var FSEG_COLORS={
+  'Socios Estratégicos':'#c8401a','Clientes Corporativos Fieles':'#d4882a',
+  'Cuentas en Alerta':'#3a8c6e','Nuevos Aliados':'#3d6fb5','Prospectos Inactivos':'#8a7a6e'
+};
+var FSEG_ICONS={
+  'Socios Estratégicos':'⭐','Clientes Corporativos Fieles':'🤝',
+  'Cuentas en Alerta':'🔔','Nuevos Aliados':'🌱','Prospectos Inactivos':'🔄'
+};
+var FSTAGE_ACTIONS={
+  '1C':'Fidelizar & Premiar','2C':'VIP / Upsell','3C':'Reactivar',
+  '4C':'Nutrir','R1':'Win-Back','R2':'Flujo Frío'
+};
+var FKEY='valxp_funnel_v1';
+var CL=null; // autocomplete lookup, loaded async
+
+// ── State ───────────────────────────────────────────────────────────────────
+var fDeals=[], fSeg='all', fPeriod='weekly', fEditId=null, fStageHL=null;
+
+// ── Persistence ─────────────────────────────────────────────────────────────
+function fSave(){try{localStorage.setItem(FKEY,JSON.stringify(fDeals));}catch(e){}}
+function fLoad(){
+  try{var r=localStorage.getItem(FKEY);if(r){fDeals=JSON.parse(r);return;}}catch(e){}
+  fDeals=fSeedDeals();
+}
+function fSeedDeals(){
+  var t=new Date();
+  function d(o){var x=new Date(t);x.setDate(x.getDate()-o);return x.toISOString().slice(0,10);}
+  return[
+    {id:1,cliente:'COOPERATIVA DEL CAMPO LTDA.',        seg:'Socios Estratégicos',         etapa:'4C',monto:18500000,asesor:'Andrés',fecha:d(2), accion:'Entregar pedido',        notas:'Pedido confirmado'},
+    {id:2,cliente:'DISTRIBUIDORA PRAXIS BEBIDAS S.A.',seg:'Clientes Corporativos Fieles',etapa:'3C',monto:32000000,asesor:'Laura', fecha:d(5), accion:'Enviar propuesta premium',notas:'Interesados en línea ejecutiva'},
+    {id:3,cliente:'DISTRIBUIDORA NOVA INTEGRAL S.A.',           seg:'Socios Estratégicos',         etapa:'R1',monto:9800000, asesor:'Andrés',fecha:d(1), accion:'Verificar satisfacción', notas:'Recompra uniforme industrial'},
+    {id:4,cliente:'DISTRIBUIDORA METRO COMERCIAL E.S.P.',seg:'Cuentas en Alerta',         etapa:'2C',monto:7500000, asesor:'Carlos',fecha:d(10),accion:'Llamada de seguimiento', notas:'Inactivo 4 meses'},
+    {id:5,cliente:'TERRA GROUP E.S.P.',   seg:'Clientes Corporativos Fieles',etapa:'3C',monto:14200000,asesor:'Laura', fecha:d(7), accion:'Presentar muestras',     notas:'Dotación médica completa'},
+    {id:6,cliente:'CONECTA CAPITA S.A.S.',              seg:'Nuevos Aliados',              etapa:'2C',monto:4100000, asesor:'Carlos',fecha:d(3), accion:'Enviar catálogo',         notas:'Primera compra reciente'},
+    {id:7,cliente:'UNIVERSIDAD NUEVA DEL VALLE',         seg:'Clientes Corporativos Fieles',etapa:'4C',monto:28900000,asesor:'Andrés',fecha:d(4), accion:'Cierre contrato',         notas:'Licitación adjudicada'},
+    {id:8,cliente:'IMPRESIONES VERSA LTDA.',           seg:'Socios Estratégicos',         etapa:'R2',monto:5600000, asesor:'Andrés',fecha:d(6), accion:'Solicitar reseña Google', notas:'Refirió 2 empresas'},
+    {id:9,cliente:'SERVICIOS PÚBLICOS ENLACE E.S.P.',            seg:'Cuentas en Alerta',           etapa:'3C',monto:8700000, asesor:'Andrés',fecha:d(9), accion:'Enviar segunda propuesta',notas:'En alerta pero interesado'},
+    {id:10,cliente:'UNION PROJECTS S.A.S',             seg:'Prospectos Inactivos',        etapa:'2C',monto:2800000, asesor:'Laura', fecha:d(15),accion:'Reactivar contacto',      notas:'Sin compra hace 12 meses'}
+  ];
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function fmtM(v){return v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v;}
+function fmtCOP(v){return '$'+Math.round(v).toLocaleString('es-CO');}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function stOf(id){return FSTAGES.find(function(s){return s.id===id;})||FSTAGES[0];}
+function periodOk(d){
+  var now=new Date(),dt=new Date(d.fecha+'T12:00:00');
+  if(fPeriod==='all')return true;
+  if(fPeriod==='weekly')return(now-dt)/864e5<=7;
+  if(fPeriod==='monthly')return d.fecha.slice(0,7)===now.toISOString().slice(0,7);
+  if(fPeriod==='quarterly'){
+    var m=now.getMonth()+1,q=Math.ceil(m/3),qs=(q-1)*3+1,qe=q*3;
+    var dm=parseInt(d.fecha.slice(5,7)),dy=parseInt(d.fecha.slice(0,4));
+    return dy===now.getFullYear()&&dm>=qs&&dm<=qe;
+  }
+  return true;
+}
+function fFiltered(){
+  return fDeals.filter(function(d){
+    return(fSeg==='all'||d.seg===fSeg)&&periodOk(d);
+  });
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+function fRender(){fRenderKPIs();fRenderFunnel();fRenderConv();fRenderPipeline();fRenderSummaries();fRenderPeriodLbl();}
+
+function fRenderKPIs(){
+  var data=fFiltered();
+  var total=data.length;
+  var totM=data.reduce(function(a,d){return a+d.monto;},0);
+  var closed=data.filter(function(d){return d.etapa==='4C'||d.etapa==='R1'||d.etapa==='R2';});
+  var closedM=closed.reduce(function(a,d){return a+d.monto;},0);
+  var neg=data.filter(function(d){return d.etapa==='2C'||d.etapa==='3C';});
+  var negM=neg.reduce(function(a,d){return a+d.monto;},0);
+  var tasa=total?((closed.length/total)*100).toFixed(1)+'%':'0%';
+  var kpis=[
+    {lbl:'Total Negocios',   val:total,         sub:'En seguimiento',        c:'#2E4FBF'},
+    {lbl:'Monto Pipeline',   val:fmtM(totM),    sub:'Valor total estimado',  c:'#3D8BBF'},
+    {lbl:'Cerrados',         val:closed.length, sub:'4C + Recompra + Rec.',  c:'#C8401A'},
+    {lbl:'Monto Cerrado',    val:fmtM(closedM), sub:'Confirmado',            c:'#D4882A'},
+    {lbl:'En Negociación',   val:neg.length,    sub:'Etapas 2C + 3C',        c:'#2E7D5E'},
+    {lbl:'Tasa de Cierre',   val:tasa,           sub:'Cerrados vs total',     c:'#9B59B6'}
+  ];
+  var el=document.getElementById('fnKpis');
+  el.innerHTML=kpis.map(function(k){
+    return '<div class="fn-kpi" style="--fkc:'+k.c+'">'+
+      '<div class="fn-kpi-lbl">'+k.lbl+'</div>'+
+      '<div class="fn-kpi-val">'+k.val+'</div>'+
+      '<div class="fn-kpi-sub">'+k.sub+'</div></div>';
+  }).join('');
+}
+
+function fRenderFunnel(){
+  var data=fFiltered();
+  var counts={},montos={};
+  FSTAGES.forEach(function(s){counts[s.id]=0;montos[s.id]=0;});
+  data.forEach(function(d){counts[d.etapa]=(counts[d.etapa]||0)+1;montos[d.etapa]=(montos[d.etapa]||0)+d.monto;});
+  var el=document.getElementById('fnFunnelBars');
+  el.innerHTML=FSTAGES.map(function(st){
+    var cnt=counts[st.id]||0;
+    var mnt=montos[st.id]||0;
+    var hl=fStageHL===st.id?' outline:2px solid #fff;':'';
+    return '<div class="fn-stage-bar" data-stid="'+st.id+'" style="background:'+st.color+';width:'+st.w+'%;height:50px;'+hl+'">'+
+      '<div class="fn-stage-inner">'+
+      '<span class="fn-stage-icon">'+st.icon+'</span>'+
+      '<div style="flex:1">'+
+      '<div class="fn-stage-name">'+st.id+' '+st.name+'</div>'+
+      '<div class="fn-stage-monto">'+st.desc+'</div>'+
+      '</div>'+
+      '<div style="text-align:right">'+
+      '<div class="fn-stage-count">'+cnt+'</div>'+
+      (mnt>0?'<div class="fn-stage-monto">'+fmtM(mnt)+'</div>':'')+
+      '</div></div></div>';
+  }).join('');
+  el.querySelectorAll('.fn-stage-bar').forEach(function(bar){
+    bar.addEventListener('click',function(){
+      var id=bar.dataset.stid;
+      fStageHL=fStageHL===id?null:id;
+      fRenderFunnel(); fRenderPipeline();
+    });
+  });
+}
+
+function fRenderConv(){
+  var data=fFiltered();
+  var counts={};
+  FSTAGES.forEach(function(s){counts[s.id]=0;});
+  data.forEach(function(d){counts[d.etapa]=(counts[d.etapa]||0)+1;});
+  var pairs=[['1C','2C'],['2C','3C'],['3C','4C'],['4C','R1'],['R1','R2']];
+  var el=document.getElementById('fnConvBars');
+  el.innerHTML=pairs.map(function(p){
+    var from=counts[p[0]]||0,to=counts[p[1]]||0;
+    var pct=from>0?Math.round((to/from)*100):0;
+    var stB=stOf(p[1]);
+    return '<div class="fn-conv-row">'+
+      '<div class="fn-conv-lbl" style="color:'+stOf(p[0]).color+'">'+p[0]+' → '+p[1]+'</div>'+
+      '<div class="fn-conv-track"><div class="fn-conv-fill" style="width:0%;background:'+stB.color+'" data-w="'+pct+'"></div></div>'+
+      '<div class="fn-conv-pct">'+pct+'%</div></div>';
+  }).join('');
+  setTimeout(function(){
+    el.querySelectorAll('.fn-conv-fill').forEach(function(b){b.style.width=b.dataset.w+'%';});
+  },80);
+}
+
+function fRenderPipeline(){
+  var data=fStageHL?fFiltered().filter(function(d){return d.etapa===fStageHL;}):fFiltered();
+  var sorted=data.slice().sort(function(a,b){return b.monto-a.monto;});
+  document.getElementById('fnCountLbl').textContent=sorted.length+' negocios'+(fStageHL?' · '+fStageHL:'');
+  var tbody=document.getElementById('fnPipelineBody');
+  tbody.innerHTML=sorted.map(function(deal){
+    var st=stOf(deal.etapa);
+    var sc=FSEG_COLORS[deal.seg]||'#888';
+    return '<tr data-fid="'+deal.id+'">'+
+      '<td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+deal.cliente+'">'+deal.cliente+'</td>'+
+      '<td><span class="fn-tag" style="background:'+sc+'18;color:'+sc+'">'+((FSEG_ICONS[deal.seg]||'')+' '+deal.seg.split(' ')[0])+'</span></td>'+
+      '<td><span class="fn-stg-dot" style="background:'+st.color+'"></span><b style="color:'+st.color+'">'+st.id+'</b> '+st.name+'</td>'+
+      '<td style="text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700">'+fmtCOP(deal.monto)+'</td>'+
+      '<td style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:var(--muted)">'+( deal.asesor||'—')+'</td>'+
+      '<td style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:var(--muted)">'+deal.fecha+'</td>'+
+      '<td style="font-size:10px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+( deal.accion||'—')+'</td>'+
+      '<td style="white-space:nowrap">'+
+        '<button onclick="window._fnEdit('+deal.id+')" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 3px" title="Editar">✏️</button>'+
+        '<button onclick="window._fnDel('+deal.id+')" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 3px" title="Eliminar">🗑️</button>'+
+      '</td></tr>';
+  }).join('');
+}
+
+function fRenderSummaries(){
+  fRenderSum('fnWeekly','weekly');
+  fRenderSum('fnMonthly','monthly');
+  fRenderSum('fnQuarterly','quarterly');
+}
+function fRenderSum(elId,period){
+  var el=document.getElementById(elId); el.innerHTML='';
+  var groups={};
+  fDeals.forEach(function(d){
+    var key;
+    if(period==='weekly'){var dt=new Date(d.fecha+'T12:00:00');dt.setDate(dt.getDate()-dt.getDay());key=dt.toISOString().slice(0,10);}
+    else if(period==='monthly'){key=d.fecha.slice(0,7);}
+    else{var m=parseInt(d.fecha.slice(5,7));key=d.fecha.slice(0,4)+'-T'+Math.ceil(m/3);}
+    if(!groups[key])groups[key]={n:0,monto:0,closed:0,closedM:0};
+    groups[key].n++;groups[key].monto+=d.monto;
+    if(['4C','R1','R2'].includes(d.etapa)){groups[key].closed++;groups[key].closedM+=d.monto;}
+  });
+  var keys=Object.keys(groups).sort().reverse().slice(0,5);
+  if(!keys.length){el.innerHTML='<div style="color:var(--muted);font-size:10px;padding:6px 0">Sin datos</div>';return;}
+  var mn=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  keys.forEach(function(k){
+    var g=groups[k];
+    var lbl=k;
+    if(period==='weekly')lbl='Sem '+k;
+    else if(period==='monthly'){var p=k.split('-');lbl=mn[+p[1]]+' '+p[0];}
+    el.innerHTML+='<div class="fn-sum-row">'+
+      '<div><div style="font-size:10px;font-weight:600">'+lbl+'</div>'+
+      '<div class="fn-sum-lbl">'+g.n+' negocios · '+g.closed+' cerrados</div></div>'+
+      '<div style="text-align:right"><div class="fn-sum-val">'+fmtM(g.closedM)+'</div>'+
+      '<div class="fn-sum-lbl">de '+fmtM(g.monto)+'</div></div></div>';
+  });
+}
+
+function fRenderPeriodLbl(){
+  var now=new Date();
+  var lbl={'weekly':'Últimos 7 días','monthly':now.toLocaleString('es',{month:'long',year:'numeric'}),'quarterly':'T'+Math.ceil((now.getMonth()+1)/3)+' '+now.getFullYear(),'all':'Todo el histórico'};
+  document.getElementById('fnPeriodLbl').textContent='▸ '+(lbl[fPeriod]||'');
+}
+
+// ── MODAL ────────────────────────────────────────────────────────────────────
+function fOpenModal(id){
+  fEditId=id||null;
+  document.getElementById('fnModalTitle').textContent=id?'Editar negocio':'Agregar negocio al pipeline';
+  document.getElementById('fnCliCard').style.display='none';
+  document.getElementById('fnAcStatus').textContent='';
+  document.getElementById('fnAcDrop').style.display='none';
+  if(id){
+    var d=fDeals.find(function(x){return x.id===id;});
+    if(!d)return;
+    document.getElementById('fnCliente').value=d.cliente;
+    document.getElementById('fnSegmento').value=d.seg;
+    document.getElementById('fnEtapa').value=d.etapa;
+    document.getElementById('fnMonto').value=d.monto;
+    document.getElementById('fnAsesor').value=d.asesor||'';
+    document.getElementById('fnFecha').value=d.fecha;
+    document.getElementById('fnAccion').value=d.accion||'';
+    document.getElementById('fnNotas').value=d.notas||'';
+  } else {
+    document.getElementById('fnCliente').value='';
+    document.getElementById('fnSegmento').value='Socios Estratégicos';
+    document.getElementById('fnEtapa').value='1C';
+    document.getElementById('fnMonto').value='';
+    document.getElementById('fnAsesor').value='';
+    document.getElementById('fnFecha').value=todayStr();
+    document.getElementById('fnAccion').value='';
+    document.getElementById('fnNotas').value='';
+  }
+  document.getElementById('fnModal').style.display='flex';
+  setTimeout(function(){document.getElementById('fnCliente').focus();},60);
+}
+function fCloseModal(){document.getElementById('fnModal').style.display='none';fEditId=null;}
+function fSaveDeal(){
+  var cliente=document.getElementById('fnCliente').value.trim();
+  var monto=parseFloat(document.getElementById('fnMonto').value)||0;
+  if(!cliente){alert('El nombre del cliente es obligatorio');return;}
+  if(!monto){alert('Ingresa un monto estimado');return;}
+  var deal={
+    id:fEditId||Date.now(),
+    cliente:cliente,
+    seg:document.getElementById('fnSegmento').value,
+    etapa:document.getElementById('fnEtapa').value,
+    monto:monto,
+    asesor:document.getElementById('fnAsesor').value.trim(),
+    fecha:document.getElementById('fnFecha').value||todayStr(),
+    accion:document.getElementById('fnAccion').value.trim(),
+    notas:document.getElementById('fnNotas').value.trim()
+  };
+  if(fEditId){
+    var idx=fDeals.findIndex(function(x){return x.id===fEditId;});
+    if(idx>=0)fDeals[idx]=deal; else fDeals.push(deal);
+  } else {fDeals.push(deal);}
+  fSave();fCloseModal();fRender();
+}
+
+// ── AUTOCOMPLETE ─────────────────────────────────────────────────────────────
+function fSetupAC(){
+  if(!CL)return;
+  var input=document.getElementById('fnCliente');
+  var drop=document.getElementById('fnAcDrop');
+  var status=document.getElementById('fnAcStatus');
+  var names=Object.keys(CL);
+
+  function fuzzy(name,q){
+    var c=name.toLowerCase(),ql=q.toLowerCase();
+    if(c===ql)return 1000; if(c.startsWith(ql))return 900; if(c.includes(ql))return 800;
+    var sc=0; ql.split(/\s+/).forEach(function(w){if(w&&c.includes(w))sc+=60;}); return sc;
+  }
+  function search(q){
+    if(!q||q.length<2)return[];
+    return names.map(function(n){return{n:n,s:fuzzy(n,q)};})
+      .filter(function(x){return x.s>30;})
+      .sort(function(a,b){return b.s-a.s;}).slice(0,8).map(function(x){return x.n;});
+  }
+  function closeDrop(){drop.style.display='none';}
+  function openDrop(results){
+    if(!results.length){closeDrop();return;}
+    drop.innerHTML=results.map(function(name){
+      var info=CL[name],col=FSEG_COLORS[info[0]]||'#888';
+      return '<div class="ac-item" data-acname="'+name.replace(/"/g,'&quot;')+'">'+
+        '<div style="flex:1;min-width:0">'+
+        '<div class="ac-name">'+name+'</div>'+
+        '<div class="ac-meta">'+(FSEG_ICONS[info[0]]||'')+' '+info[0]+' · '+info[5]+' · '+fmtM(info[7])+'/año</div>'+
+        '</div>'+
+        '<span class="ac-rfm" style="background:'+col+'18;color:'+col+'">RFM '+info[1]+'</span>'+
+        '</div>';
+    }).join('');
+    drop.style.display='block';
+    drop.querySelectorAll('.ac-item').forEach(function(item){
+      item.addEventListener('mousedown',function(e){
+        e.preventDefault();
+        var n=item.dataset.acname;
+        input.value=n; closeDrop();
+        if(CL[n])fFillCard(n,CL[n]);
+        status.textContent='';
+      });
+    });
+  }
+
+  function fFillCard(name,info){
+    var col=FSEG_COLORS[info[0]]||'#888';
+    var rfm=info[1]; var r=info[2],f=info[3],m=info[4];
+    var etapaSug=rfm>=511?'R1':rfm>=411?'3C':rfm>=311?'2C':rfm>=211?'2C':'1C';
+    var montoSug=Math.round((info[6]||0)*1.1/1000)*1000;
+    var card=document.getElementById('fnCliCard');
+    card.style.display='block';
+    card.innerHTML='<div style="font-size:11px;font-weight:700;color:'+col+';margin-bottom:6px;">'+name+'</div>'+
+      '<div class="cli-card-grid">'+
+      '<div class="cli-cell"><div class="cli-cell-lbl">Últ. año</div><div class="cli-cell-val" style="color:'+col+'">'+info[5]+'</div></div>'+
+      '<div class="cli-cell"><div class="cli-cell-lbl">Historial</div><div class="cli-cell-val">'+fmtM(info[6])+'</div></div>'+
+      '<div class="cli-cell"><div class="cli-cell-lbl">Prom. anual</div><div class="cli-cell-val">'+fmtM(info[7])+'</div></div>'+
+      '<div class="cli-cell"><div class="cli-cell-lbl">Score RFM</div><div class="cli-cell-val" style="color:'+col+'">'+rfm+'</div></div>'+
+      '</div>'+
+      '<div style="font-size:9px;color:var(--muted);margin-bottom:3px;font-family:\'IBM Plex Mono\',monospace"><b>Categoría:</b> '+info[8]+' · <b>Prod:</b> '+[info[9],info[10]].filter(Boolean).join(', ')+'</div>'+
+      '<div class="cli-tip">💡 Etapa sugerida: <b>'+etapaSug+'</b> · Monto estimado: <b>'+fmtCOP(montoSug)+'</b></div>';
+    document.getElementById('fnSegmento').value=info[0];
+    document.getElementById('fnEtapa').value=etapaSug;
+    if(!document.getElementById('fnMonto').value)document.getElementById('fnMonto').value=montoSug;
+    if(!document.getElementById('fnNotas').value)document.getElementById('fnNotas').value='Año: '+info[5]+'. Hist: '+fmtM(info[6])+'. Cat: '+info[8]+'. Prod: '+info[9]+'.';
+  }
+
+  input.addEventListener('input',function(){
+    var q=input.value.trim();
+    document.getElementById('fnCliCard').style.display='none';
+    status.textContent='';
+    if(q.length<2){closeDrop();return;}
+    var r=search(q);
+    if(r.length){openDrop(r);status.textContent=r.length+' resultados';}
+    else{closeDrop();status.textContent='Cliente nuevo';}
+  });
+  var getItems=function(){return drop.querySelectorAll('.ac-item');};
+  input.addEventListener('keydown',function(e){
+    var all=getItems(),active=drop.querySelector('.ac-item.ac-active');
+    if(e.key==='ArrowDown'){e.preventDefault();
+      var nxt=active?active.nextElementSibling:all[0];
+      if(active)active.classList.remove('ac-active');
+      if(nxt)nxt.classList.add('ac-active');}
+    else if(e.key==='ArrowUp'){e.preventDefault();
+      var prv=active?active.previousElementSibling:all[all.length-1];
+      if(active)active.classList.remove('ac-active');
+      if(prv)prv.classList.add('ac-active');}
+    else if(e.key==='Enter'&&active){e.preventDefault();
+      var n=active.dataset.acname;input.value=n;closeDrop();
+      if(CL[n])fFillCard(n,CL[n]);status.textContent='';}
+    else if(e.key==='Escape')closeDrop();
+  });
+  input.addEventListener('blur',function(){setTimeout(closeDrop,180);});
+}
+
+// ── GLOBAL HANDLERS ──────────────────────────────────────────────────────────
+window._fnEdit=function(id){fOpenModal(id);};
+window._fnDel=function(id){
+  if(confirm('¿Eliminar este negocio del pipeline?')){
+    fDeals=fDeals.filter(function(d){return d.id!==id;});
+    fSave();fRender();
+  }
+};
+
+// ── EXPORT ───────────────────────────────────────────────────────────────────
+function fExport(){
+  var hdr=['Cliente','Segmento','Etapa','Monto','Asesor','Fecha','Acción','Notas'];
+  var rows=fDeals.map(function(d){
+    return['"'+d.cliente+'"','"'+d.seg+'"',d.etapa,d.monto,'"'+(d.asesor||'')+'"',d.fecha,'"'+(d.accion||'')+'"','"'+(d.notas||'')+'"'].join(',');
+  });
+  var csv=[hdr.join(',')].concat(rows).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='VALXP_Pipeline_'+todayStr()+'.csv';
+  a.click();
+}
+
+// ── BIND EVENTS ───────────────────────────────────────────────────────────────
+function fBindEvents(){
+  document.getElementById('fnAddBtn').addEventListener('click',function(){fOpenModal(null);});
+  document.getElementById('fnCancelBtn').addEventListener('click',fCloseModal);
+  document.getElementById('fnSaveBtn').addEventListener('click',fSaveDeal);
+  document.getElementById('fnExportBtn').addEventListener('click',fExport);
+  document.getElementById('fnModal').addEventListener('click',function(e){if(e.target===this)fCloseModal();});
+
+  // Segment filter
+  document.getElementById('tab-funnel').addEventListener('click',function(e){
+    var chip=e.target.closest('[data-fseg]');
+    if(chip){
+      document.querySelectorAll('[data-fseg]').forEach(function(b){b.classList.remove('on');});
+      chip.classList.add('on');
+      fSeg=chip.dataset.fseg; fStageHL=null; fRender(); return;
+    }
+    var pt=e.target.closest('[data-fperiod]');
+    if(pt){
+      document.querySelectorAll('[data-fperiod]').forEach(function(b){b.classList.remove('on');});
+      pt.classList.add('on');
+      fPeriod=pt.dataset.fperiod; fRender();
+    }
+  });
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&document.getElementById('fnModal').style.display!=='none')fCloseModal();
+    if(e.key==='Enter'&&document.getElementById('fnModal').style.display!=='none'&&document.activeElement&&document.activeElement.id!=='fnCliente')fSaveDeal();
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.initFunnel=function(){
+  fLoad();
+  fBindEvents();
+  fRender();
+  // Load CL lookup async (large data, avoid blocking paint)
+  setTimeout(function(){
+    CL={"ASOCIACIÓN CIVILES ORIENTE":["Clientes Corporativos Fieles",455,4,5,5,2025,204348882,51087221,"Dotaciones Industriales - Uniformes","UNIFORME","ZAPATOS"],"SISTEMAS CARIBE LTDA.":["Prospectos Inactivos",155,1,5,5,2022,16128000,16128000,"Dotaciones Administrativas Uniformes","ZAPATOS","BLUSA"],"SERVICIOS PÚBLICOS TERRA E.S.P.":["Prospectos Inactivos",155,1,5,5,2022,14457800,14457800,"Dotaciones Industriales - Uniformes","BOTA CON PUNTERA KONDOR","JEAN CLSICO INDUSTRIAL"],"SISTEMAS BRILLO S.A.":["Prospectos Inactivos",144,1,4,4,2022,9506000,9506000,"Dotaciones Administrativas Uniformes","ZAPATO TIPO  TENIS","CAMIBUSO TIPO POLO"],"CONSULTORA VITA AGROINDUSTRIAL LTDA.":["Socios Estratégicos",555,5,5,5,2025,202778865,50694716,"Dotaciones Industriales - Uniformes","KIT UNIFORME","CAMIBUSO TIPO POLO"],"INSTITUTO DE SALUD DEL SUR ":["Nuevos Aliados",254,2,5,4,2023,9655974,4827987,"Prendas Publicitarias","CONJUNTO 2 PZ","CAMIBUSO TIPO POLO"],"CORPORACIÓN EDUCATIVA NUEVA DE COLOMBIA":["Clientes Corporativos Fieles",455,4,5,5,2025,9984350,2496087,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","SUDADERA"],"PROCESADORA AGRÍCOLA APEX S.A.S.":["Clientes Corporativos Fieles",455,4,5,5,2025,147073768,36768442,"Dotaciones Industriales - Uniformes","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"HOSPITAL CENTRAL ":["Prospectos Inactivos",155,1,5,5,2022,34443000,34443000,"Dotaciones Industriales - Uniformes","UNIFORME","CAMISA DAMA ADMINISTRATIVA"],"CORPORACIÓN EDUCATIVA NUEVA ANDINA":["Prospectos Inactivos",122,1,2,2,2022,560000,560000,"Dotaciones Industriales - Uniformes","UNIFORME",""],"ACTIVA CONNECT S.A.":["Cuentas en Alerta",333,3,3,3,2024,1290000,430000,"Dotaciones Industriales - Uniformes","UNIFORME",""],"GANADERA FUERZA S.A.S.":["Socios Estratégicos",555,5,5,5,2026,40090600,8018120,"Dotaciones Industriales - Uniformes","UNIFORME","CONJUNTO 2 PZ"],"CORPORACIÓN GLOBAL TEXTIL S.A.":["Prospectos Inactivos",144,1,4,4,2022,3925000,3925000,"Dotaciones Industriales - Uniformes","PANTALON EN DRIL CAMUFLADO","CAMIBUSO TIPO POLO"],"AUTOMOTRIZ STRATA LTDA.":["Prospectos Inactivos",145,1,4,5,2022,11192924,11192924,"Prendas Publicitarias","CHALECO","CAMISETA COLOR"],"GRÁFICA TRIPLE LTDA.":["Socios Estratégicos",555,5,5,5,2026,32237903,6447581,"Prendas Publicitarias","CACHUCHAS","TULAS"],"DISTRIBUIDORA PRAXIS BEBIDAS S.A.":["Clientes Corporativos Fieles",455,4,5,5,2025,558335100,139583775,"Prendas Publicitarias","PONCHOS","CACHUCHAS"],"HORIZONTE SOLUTIONS S.A.S.":["Prospectos Inactivos",134,1,3,4,2022,4060000,4060000,"Prendas Publicitarias","CACHUCHAS","CAMISETA   ESTAMPADA"],"INDUSTRIAS OPTIMA LTDA.":["Prospectos Inactivos",133,1,3,3,2022,1023110,1023110,"Dotaciones Administrativas Uniformes","PETOS JUEGOS","TELA"],"INDUSTRIAS ANDES MÉDICA S.A.S.":["Socios Estratégicos",555,5,5,5,2025,122308332,30577083,"Dotaciones Industriales - Uniformes","OVEROLES EN DRIL  BORDADO","BORDADO"],"CONSTRUCTORA UNION E.S.P.":["Prospectos Inactivos",135,1,3,5,2022,10017200,10017200,"Dotaciones Industriales - Uniformes","CORTE + CONFECCION","TELA"],"SISTEMAS OMEGA LTDA.":["Prospectos Inactivos",133,1,3,3,2022,1448000,1448000,"Dotaciones Médicas y hospitalarias, Unif","CHALECO ANTI FLUIDOS","CAMIBUSO TIPO POLO"],"METRO ASSETS S.A.S.":["Nuevos Aliados",244,2,4,4,2023,3959359,1979680,"Dotaciones Industriales - Uniformes","JEAN PARA VENTAS","CHAQUETA"],"CONSTRUCTORA AVANCE PROYECTOS S.A.":["Socios Estratégicos",553,5,5,3,2026,900629,180126,"Prendas Publicitarias","BORDADO","CAMIBUSO TIPO POLO"],"OPERACIONES LOGIX SALUD LTDA.":["Prospectos Inactivos",153,1,5,3,2022,1873000,1873000,"Prendas Publicitarias","BUSO","JEAN CLSICO INDUSTRIAL"],"FUERZA PARTNERS S.A.S":["Cuentas en Alerta",355,3,5,5,2024,74499506,24833169,"Prendas Publicitarias","BUSO","CAMIBUSO TIPO POLO"],"OPERACIONES METRO S.A.":["Clientes Corporativos Fieles",454,4,5,4,2025,9320400,2330100,"Dotaciones Médicas y hospitalarias, Unif","BATA EN ANTI FLUIDO","SUDADERA"],"UNION PROJECTS S.A.S":["Prospectos Inactivos",155,1,5,5,2022,18761000,18761000,"Dotaciones Industriales - Uniformes","OVEROL DOS PIEZAS BORDADO","CAMISA POPELINA"],"IMPRESIONES VERSA LTDA.":["Socios Estratégicos",555,5,5,5,2026,286210737,57242147,"Prendas Publicitarias","CACHUCHAS","RUANAS BORDADAS"],"CENTRO VITA ALIMENTARIA LTDA.":["Socios Estratégicos",555,5,5,5,2025,39504228,19752114,"Dotaciones Industriales - Uniformes","CAMISA EN DRIL MANGA LARGA","CAMISETA   ESTAMPADA"],"SERVICIOS CARIBE S.A.S":["Prospectos Inactivos",114,1,1,4,2022,3800000,3800000,"Prendas Publicitarias","RABOEGALLOS ESTAMPADOS",""],"AUTOMOTRIZ SUR LTDA.":["Socios Estratégicos",555,5,5,5,2025,48649200,12162300,"Prendas Publicitarias","CACHUCHAS","CAMISETA   ESTAMPADA"],"DISTRIBUIDORA AVANCE LICORES S.A.":["Clientes Corporativos Fieles",455,4,5,5,2025,87629000,21907250,"Prendas Publicitarias","CAMISETA   ESTAMPADA","CACHUCHAS"],"CONSTRUCTORA UNION LTDA.":["Prospectos Inactivos",144,1,4,4,2022,6002000,6002000,"Prendas Publicitarias","PONCHOS","RABOEGALLOS"],"DISTRIBUIDORA IMPULSO LICORES S.A.":["Prospectos Inactivos",144,1,4,4,2022,4300400,4300400,"Prendas Publicitarias","PONCHOS","RABOEGALLOS"],"INVERSIONES FUERZA LOGÍSTICA E.S.P.":["Socios Estratégicos",555,5,5,5,2026,32422500,6484500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","TULAS"],"INVERSIONES SABANA AGROINDUSTRIAL E.S.P.":["Clientes Corporativos Fieles",441,4,4,1,2025,294814,147407,"Prendas Publicitarias","CAMISETA BORDADA","CAMIBUSO TIPO POLO"],"ALTA CONSULTING S.A.":["Prospectos Inactivos",121,1,2,1,2022,64748,64748,"Prendas Publicitarias","BORDADO","PROGRAMAS"],"CARIBE CONSULTING E.S.P.":["Nuevos Aliados",232,2,3,2,2023,338782,169391,"Prendas Publicitarias","BORDADO","PROGRAMAS"],"INVERSIONES CENTRAL EDUCATIVA E.S.P.":["Prospectos Inactivos",132,1,3,2,2022,377600,377600,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","BORDADO"],"SISTEMAS METRO LTDA.":["Clientes Corporativos Fieles",441,4,4,1,2025,209438,52360,"Prendas Publicitarias","BORDADO","PROGRAMAS"],"SERVICIOS LOGIX FINANCIERA LTDA.":["Prospectos Inactivos",131,1,3,1,2022,28000,28000,"Prendas Publicitarias","BORDADO","PROGRAMAS"],"DISTRIBUIDORA SIERRA LOGÍSTICA LTDA.":["Clientes Corporativos Fieles",455,4,5,5,2025,107380600,26845150,"Prendas Publicitarias","BALLETIYA ESTAMPADA","CACHUCHAS"],"INDUSTRIAS VALORE ALIMENTARIA LTDA.":["Socios Estratégicos",555,5,5,5,2025,93791400,23447850,"Prendas Publicitarias","BALLETIYA ESTAMPADA","CACHUCHAS"],"PROCESOS NEXUS S.A.":["Clientes Corporativos Fieles",455,4,5,5,2025,24518500,6129625,"Dotaciones Industriales - Uniformes","PANTALON DRILL ISLERO","CAMISA POPELINA"],"UNIVERSIDAD NUEVA DEL VALLE":["Clientes Corporativos Fieles",455,4,5,5,2025,99797500,24949375,"Dotaciones Industriales - Uniformes","CAMIBUSO TIPO POLO","JEAN CLASICO PROCESADO"],"SERVICIOS PÚBLICOS ENLACE E.S.P.":["Cuentas en Alerta",355,3,5,5,2024,22686300,7562100,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","CAMISETA COLOR"],"DISTRIBUIDORA VALORE COMERCIAL S.A.S.":["Prospectos Inactivos",142,1,4,2,2022,688000,688000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO M/ LARGA EN POLUX","PANTALON DAMA  DRIL STRETCH"],"RED FIRMA EDUCATIVA LTDA.":["Clientes Corporativos Fieles",455,4,5,5,2025,12950000,4316667,"Dotaciones Administrativas Uniformes","CAMISA COMBINADA","PANTALON CLASICO"],"AUTOMOTRIZ APEX S.A.S.":["Cuentas en Alerta",353,3,5,3,2024,2614000,1307000,"Dotaciones Administrativas Uniformes","CAMISA COMBINADA","PANTALON CLASICO"],"ANDINA CARIBE MINERA E.S.P.":["Cuentas en Alerta",355,3,5,5,2024,57973000,19324333,"Dotaciones Administrativas Uniformes","CAMISA EN LINO MANGA LARGA","PANTALON LINO"],"CONSULTORA LINEA COMERCIAL S.A.":["Prospectos Inactivos",122,1,2,2,2022,624000,624000,"Dotaciones Administrativas Uniformes","PANTALON CLASICO","DELANTAL"],"DISTRIBUIDORA CLAVE S.A.S":["Socios Estratégicos",555,5,5,5,2026,45587100,9117420,"Dotaciones Industriales - Uniformes","KIT UNIFORME","PANTALON CLASICO"],"COOPERATIVA ANDINA LTDA.":["Socios Estratégicos",555,5,5,5,2025,823009941,205752485,"Dotaciones Administrativas Uniformes","CAMISA POPELINA","PANTALON LINO"],"CONECTA CAPITA S.A.S.":["Nuevos Aliados",245,2,4,5,2023,15388000,7694000,"Dotaciones Industriales - Uniformes","CAMISA EN DRIL MANGA LARGA","PANTALON EN DRIL CAMUFLADO"],"CONSTRUCTORA ORIENTE PROYECTOS S.A.S.":["Prospectos Inactivos",133,1,3,3,2022,1821000,1821000,"Dotaciones Administrativas Uniformes","CAMISA EN OXFORD","JEAN CLSICO INDUSTRIAL"],"CONSTRUCTORA CORDIAL PROYECTOS S.A.":["Socios Estratégicos",555,5,5,5,2026,47307987,9461597,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","PANTALON DRIL CAMUFLADO"],"PROCESADORA AGRÍCOLA CENTRAL LTDA.":["Nuevos Aliados",245,2,4,5,2023,14200000,7100000,"Prendas Publicitarias","PONCHOS","JEAN CLSICO INDUSTRIAL"],"PROCESADORA AGRÍCOLA CLAVE LTDA.":["Nuevos Aliados",244,2,4,4,2023,4759500,2379750,"Prendas Publicitarias","BUSO","CAMIBUSO TIPO POLO"],"SISTEMAS FUTURA S.A.":["Clientes Corporativos Fieles",455,4,5,5,2025,12028000,3007000,"Dotaciones Industriales - Uniformes","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"PROCESADORA AGRÍCOLA FIRMA S.A.":["Prospectos Inactivos",113,1,1,3,2022,1800000,1800000,"Prendas Publicitarias","PONCHOS",""],"DISTRIBUIDORA CORDIAL LOGÍSTICA S.A.S.":["Cuentas en Alerta",345,3,4,5,2024,13597000,4532333,"Dotaciones Industriales - Uniformes","OVEROLES EN DRIL  BORDADO","CAMIBUSO TIPO POLO"],"CORPORACIÓN PACÍFICO MINERA S.A.":["Cuentas en Alerta",354,3,5,4,2024,5230100,1743367,"Dotaciones Administrativas Uniformes","OVEROLES EN DRIL  BORDADO","CAMISA EN OXFORD"],"CENTRO ACTIVA S.A.S":["Clientes Corporativos Fieles",455,4,5,5,2025,23147000,5786750,"Prendas Publicitarias","CAMIBUSO TIPO POLO","MANGAVELETA"],"TECNOLOGÍA GLOBAL LOGÍSTICA S.A.":["Prospectos Inactivos",112,1,1,2,2022,325197,325197,"Dotaciones Médicas y hospitalarias, Unif","KIT UNIFORME SUDADERA Y CAMIBU",""],"DISTRIBUIDORA PUNTO ALIMENTARIA LTDA.":["Socios Estratégicos",555,5,5,5,2026,132763500,26552700,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLASICO PROCESADO"],"DISTRIBUIDORA METRO COMERCIAL E.S.P.":["Cuentas en Alerta",355,3,5,5,2024,12935000,4311667,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"CONSULTORA ALFA COMERCIAL S.A.":["Socios Estratégicos",555,5,5,5,2026,17018147,3403629,"Dotaciones Industriales - Uniformes","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"DISTRIBUIDORA BRILLO MÉDICA E.S.P.":["Prospectos Inactivos",145,1,4,5,2022,16258500,16258500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"CONSTRUCTORA APEX & ASOCIADOS S.A.":["Prospectos Inactivos",134,1,3,4,2022,4904400,4904400,"Prendas Publicitarias","CAMISETA BORDADA","JEAN CLSICO INDUSTRIAL"],"GANADERA NORTE S.A.S.":["Prospectos Inactivos",153,1,5,3,2023,998290,499145,"Prendas Publicitarias","CACHUCHAS","JEAN CLSICO INDUSTRIAL"],"INVERSIONES ORIENTE MÉDICA S.A.S.":["Clientes Corporativos Fieles",455,4,5,5,2025,29477000,7369250,"Prendas Publicitarias","BUSO","JEAN CLASICO PROCESADO"],"DISTRIBUIDORA VALORE LICORES S.A.":["Prospectos Inactivos",133,1,3,3,2022,1575000,1575000,"Prendas Publicitarias","CAMISETA   ESTAMPADA","JEAN CLSICO INDUSTRIAL"],"VALORE LOGISTICS S.A.":["Clientes Corporativos Fieles",455,4,5,5,2025,33189600,8297400,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","CAMISETA   ESTAMPADA"],"RED LOGIX LOGÍSTICA S.A.":["Prospectos Inactivos",133,1,3,3,2022,1866407,1866407,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN STRECH  DAMA"],"GRUPO ORIENTE COMERCIAL S.A.S.":["Clientes Corporativos Fieles",443,4,4,3,2025,1985416,661805,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","JEAN STRECH  DAMA"],"COOPERATIVA DEL CAMPO LTDA.":["Socios Estratégicos",555,5,5,5,2026,25899000,5179800,"Dotaciones Administrativas Uniformes","PANTALON LINO","CAMISA EN LINO MANGA LARGA"],"CONSTRUCTORA ENLACE & ASOCIADOS S.A.":["Prospectos Inactivos",134,1,3,4,2022,9051267,9051267,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","CAMISA EN OXFORD"],"GANADERA VALORE S.A.":["Prospectos Inactivos",144,1,4,4,2022,2962560,2962560,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","BOTA PUNTA SEGURIDAD CUERO"],"SERVICIOS NEXUS FINANCIERA E.S.P.":["Prospectos Inactivos",133,1,3,3,2022,878500,878500,"Dotaciones Industriales - Uniformes","CAMIBUSO TIPO POLO","CAMISA EN INDIGO"],"INTEGRAL PACÍFICO SALUD E.S.P.":["Cuentas en Alerta",354,3,5,4,2024,3722012,1861006,"Dotaciones Industriales - Uniformes","CAMISA EN DRIL MANGA LARGA","JEAN CLSICO INDUSTRIAL"],"UNION CONSULTING E.S.P.":["Clientes Corporativos Fieles",454,4,5,4,2025,7928801,1982200,"Dotaciones Industriales - Uniformes","CAMISA EN INDIGO","JEAN CLSICO INDUSTRIAL"],"CENTRO PRAXIS EDUCATIVA S.A.":["Clientes Corporativos Fieles",443,4,4,3,2025,2329000,582250,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","BOTA PUNTA SEGURIDAD CUERO"],"DISTRIBUIDORA DELTA LOGÍSTICA E.S.P.":["Prospectos Inactivos",121,1,2,1,2022,60000,60000,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL",""],"TERRA GROUP E.S.P.":["Clientes Corporativos Fieles",455,4,5,5,2025,27055534,6763884,"Dotaciones Industriales - Uniformes","CAMISA EN DRIL MANGA LARGA","PANTALON EN DRIL CAMUFLADO"],"SOLUCIONES LINEA INDUSTRIAL E.S.P.":["Socios Estratégicos",554,5,5,4,2025,5448361,1362090,"Dotaciones Industriales - Uniformes","CAMISA EN DRIL MANGA LARGA","JEAN CLSICO INDUSTRIAL"],"DISTRIBUIDORA BRILLO INTEGRAL S.A.S.":["Socios Estratégicos",555,5,5,5,2026,13663400,2732680,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","CAMISETA BORDADA"],"INVERSIONES CLAVE S.A.":["Nuevos Aliados",244,2,4,4,2023,3491000,1745500,"Prendas Publicitarias","CAMISETA   ESTAMPADA","CAMIBUSO TIPO POLO"],"DISTRIBUIDORA METRO S.A.":["Prospectos Inactivos",132,1,3,2,2022,687492,687492,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","FLETE"],"ALIANZA ANDES INDUSTRIAL LTDA.":["Prospectos Inactivos",111,1,1,1,2022,286130,286130,"Prendas Publicitarias","ESTAMPADO",""],"ACTIVA VENTURES LTDA.":["Nuevos Aliados",224,2,2,4,2023,3390000,1695000,"Dotaciones Industriales - Uniformes","CUELLOS Y PUÑOS TEJIDOS",""],"ALIANZA PROTEK LTDA.":["Prospectos Inactivos",135,1,3,5,2022,13384000,13384000,"Dotaciones Industriales - Uniformes","CONFECCION","BATA EN ANTI FLUIDO"],"DISTRIBUIDORA VITA S.A.":["Prospectos Inactivos",144,1,4,4,2022,7486652,7486652,"Prendas Publicitarias","CAMISETA COLOR","CHALECO ANTI FLUIDOS"],"SISTEMAS ENLACE S.A.":["Cuentas en Alerta",353,3,5,3,2024,2120731,706910,"Prendas Publicitarias","CAMIBUSO TIPO POLO","CAMISETA   ESTAMPADA"],"STRATA SERVICES S.A.S.":["Clientes Corporativos Fieles",455,4,5,5,2025,50605000,12651250,"Prendas Publicitarias","CHALECO","CAMISETA   ESTAMPADA"],"DISTRIBUIDORA PUNTO S.A.S":["Clientes Corporativos Fieles",444,4,4,4,2025,6190000,3095000,"Dotaciones Industriales - Uniformes","CHALECO","CACHUCHAS"],"CONSTRUCTORA LINEA MÉDICA S.A.S.":["Prospectos Inactivos",134,1,3,4,2022,2800000,2800000,"Dotaciones Industriales - Uniformes","CHALECO","CAMIBUSO TIPO POLO"],"DISTRIBUIDORA CORE COMERCIAL S.A.S.":["Prospectos Inactivos",112,1,1,2,2022,813600,813600,"Dotaciones Administrativas Uniformes","CHAQUETA",""],"NORTE DYNAMICS S.A.":["Prospectos Inactivos",123,1,2,3,2022,2512600,2512600,"Dotaciones Administrativas Uniformes","CHAQUETA","CAMISETA BORDADA"],"GANADERA ALTA S.A.S.":["Prospectos Inactivos",111,1,1,1,2022,242017,242017,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"INDUSTRIAS UNION ENERGÉTICA S.A.":["Cuentas en Alerta",334,3,3,4,2024,3709000,1236333,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"GRUPO ANDES MÉDICA E.S.P.":["Nuevos Aliados",231,2,3,1,2023,272000,136000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","PROGRAMACION DE BORDADO"],"COMERCIALIZADORA CENTRAL E.S.P.":["Prospectos Inactivos",112,1,1,2,2022,383500,383500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"INTEGRAL ORIENTE FINANCIERA LTDA.":["Prospectos Inactivos",131,1,3,1,2022,206050,206050,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CACHUCHAS"],"SUR TECH S.A.S":["Socios Estratégicos",554,5,5,4,2025,7842414,2614138,"Prendas Publicitarias","CAMIBUSO TIPO POLO","CAMISETA BORDADA"],"DISTRIBUIDORA DELTA LICORES S.A.":["Prospectos Inactivos",111,1,1,1,2022,302521,302521,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"ANDES SERVICES LTDA.":["Prospectos Inactivos",123,1,2,3,2022,1955042,1955042,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"CORPORACIÓN CENTRAL TEXTIL S.A.S.":["Prospectos Inactivos",111,1,1,1,2022,285600,285600,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"FUERZA SYSTEMS S.A.S":["Nuevos Aliados",224,2,2,4,2023,2746500,1373250,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"ALIANZA NEXUS S.A.":["Nuevos Aliados",223,2,2,3,2023,1011000,505500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"LOGIX GROUP S.A.S":["Clientes Corporativos Fieles",444,4,4,4,2025,4124000,1031000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"HOSPITAL AVANZADA ":["Cuentas en Alerta",332,3,3,2,2024,641176,213725,"Prendas Publicitarias","BORDADO","CAMIBUSO TIPO POLO"],"INDUSTRIAS APEX S.A.S":["Socios Estratégicos",542,5,4,2,2026,605522,121104,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","BORDADO"],"COMERCIALIZADORA CORE LTDA.":["Socios Estratégicos",544,5,4,4,2025,2857703,714426,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","BORDADO"],"SIERRA SOLUTIONS LTDA.":["Prospectos Inactivos",112,1,1,2,2022,684000,684000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"DISTRIBUIDORA CAPITA INTEGRAL E.S.P.":["Socios Estratégicos",545,5,4,5,2025,11595500,2898875,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CHAQUETA"],"AGROPECUARIA FUTURA S.A.S.":["Prospectos Inactivos",134,1,3,4,2022,3287854,3287854,"Prendas Publicitarias","CAMISETA   ESTAMPADA","CAMIBUSO TIPO POLO"],"ANDES GROUP S.A.S":["Socios Estratégicos",544,5,4,4,2025,5631840,1407960,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CHAQUETA"],"SOLUCIONES PACÍFICO LTDA.":["Socios Estratégicos",533,5,3,3,2025,1670000,417500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"INDUSTRIAS METRO S.A.S.":["Prospectos Inactivos",111,1,1,1,2022,0,0,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"CORPORACIÓN ACTIVA SALUD LTDA.":["Nuevos Aliados",223,2,2,3,2023,1201000,600500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"CONSTRUCTORA ENLACE LTDA.":["Prospectos Inactivos",112,1,1,2,2022,480000,480000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"ALFA SERVICES S.A.S":["Prospectos Inactivos",122,1,2,2,2022,437647,437647,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"GANADERA ACTIVA S.A.S.":["Socios Estratégicos",555,5,5,5,2025,48124000,12031000,"Prendas Publicitarias","CACHUCHAS","CAMIBUSO TIPO POLO"],"CONSTRUCTORA CLAVE PROYECTOS S.A.":["Socios Estratégicos",555,5,5,5,2025,15900735,3975184,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","BORDADO"],"SUR CAPITAL S.A.S":["Prospectos Inactivos",112,1,1,2,2022,514000,514000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"CONSTRUCTORA DELTA & ASOCIADOS S.A.S.":["Prospectos Inactivos",123,1,2,3,2022,1389000,1389000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CAMISA EN OXFORD"],"AUTOMOTRIZ PACÍFICO LTDA.":["Prospectos Inactivos",123,1,2,3,2022,1218000,1218000,"Dotaciones Administrativas Uniformes","CAMISA COMBINADA","CAMIBUSO TIPO POLO"],"AUTOMOTRIZ PRIME S.A.S.":["Prospectos Inactivos",112,1,1,2,2022,612000,612000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"CONSTRUCTORA PRAXIS ENERGÉTICA S.A.S.":["Prospectos Inactivos",124,1,2,4,2022,2823530,2823530,"Prendas Publicitarias","CAMISETA COLOR",""],"CORPORACIÓN HORIZONTE MINERA S.A.S.":["Nuevos Aliados",235,2,3,5,2023,13475800,6737900,"Prendas Publicitarias","CAMISETA COLOR","CAMISETA BORDADA"],"UNIVERSIDAD CENTRAL DEL CARIBE":["Cuentas en Alerta",333,3,3,3,2024,2067000,689000,"Prendas Publicitarias","BOLSA","CAMISETA   ESTAMPADA"],"ALIANZA CORDIAL COMERCIAL S.A.S.":["Prospectos Inactivos",121,1,2,1,2022,240000,240000,"Prendas Publicitarias","CAMISETA   ESTAMPADA",""],"INDUSTRIAS NORTE E.S.P.":["Prospectos Inactivos",114,1,1,4,2022,3174300,3174300,"Prendas Publicitarias","CAMISETA   ESTAMPADA",""],"HOSPITAL ANDINA S.A.S.":["Prospectos Inactivos",132,1,3,2,2022,416400,416400,"Dotaciones Administrativas Uniformes","CAMISA EN OXFORD","BORDADO"],"SOLUCIONES IMPULSO S.A.S.":["Prospectos Inactivos",111,1,1,1,2022,0,0,"Dotaciones Industriales - Uniformes","CAMISA EN DRIL MANGA LARGA",""],"CORPORACIÓN ORIENTE FINANCIERA E.S.P.":["Prospectos Inactivos",131,1,3,1,2022,275966,275966,"Prendas Publicitarias","CACHUCHAS","BORDADO"],"INVERSIONES FUTURA LTDA.":["Nuevos Aliados",222,2,2,2,2023,360000,180000,"Prendas Publicitarias","CACHUCHAS",""],"VALORE ASSETS LTDA.":["Nuevos Aliados",222,2,2,2,2023,822000,411000,"Prendas Publicitarias","CACHUCHAS",""],"CENTRO LINEA S.A.S.":["Nuevos Aliados",222,2,2,2,2023,360000,180000,"Prendas Publicitarias","CACHUCHAS",""],"SERVICIOS VALORE AGROINDUSTRIAL E.S.P.":["Prospectos Inactivos",115,1,1,5,2022,18270000,18270000,"Prendas Publicitarias","CACHUCHAS",""],"AGROPECUARIA CORE S.A.":["Clientes Corporativos Fieles",454,4,5,4,2025,4069396,1356465,"Prendas Publicitarias","BUSO","BUSO MANGA LARGA"],"INDUSTRIAS CORE FINANCIERA E.S.P.":["Prospectos Inactivos",112,1,1,2,2022,675000,675000,"Prendas Publicitarias","BUSO",""],"INTEGRAL LOGIX COMERCIAL LTDA.":["Socios Estratégicos",541,5,4,1,2026,87900,21975,"Prendas Publicitarias","BORDADO","PROGRAMACION DE BORDADO"],"ACTIVA CONSULTING LTDA.":["Clientes Corporativos Fieles",441,4,4,1,2025,148153,37038,"Prendas Publicitarias","BORDADO",""],"CONSTRUCTORA SIERRA PROYECTOS S.A.S.":["Prospectos Inactivos",111,1,1,1,2022,30252,30252,"Prendas Publicitarias","BORDADO",""],"INVERSIONES LOGIX TEXTIL S.A.S.":["Socios Estratégicos",532,5,3,2,2025,578700,144675,"Prendas Publicitarias","BORDADO",""],"NACIONAL ORIENTE SALUD E.S.P.":["Clientes Corporativos Fieles",432,4,3,2,2025,616100,205367,"Prendas Publicitarias","BORDADO",""],"NEXUS GROUP LTDA.":["Prospectos Inactivos",111,1,1,1,2022,67745,67745,"Prendas Publicitarias","BORDADO",""],"INTEGRAL VALORE S.A.S":["Prospectos Inactivos",111,1,1,1,2022,37685,37685,"Prendas Publicitarias","BORDADO",""],"CONSTRUCTORA ACTIVA PROYECTOS S.A.S.":["Clientes Corporativos Fieles",442,4,4,2,2025,357000,89250,"Prendas Publicitarias","BORDADO",""],"ALTA SERVICES LTDA.":["Prospectos Inactivos",112,1,1,2,2022,828518,828518,"Prendas Publicitarias","BORDADO",""],"SOLUCIONES NOVA TEXTIL E.S.P.":["Clientes Corporativos Fieles",432,4,3,2,2025,428700,142900,"Prendas Publicitarias","BORDADO",""],"CONSTRUCTORA ALTA COMERCIAL S.A.S.":["Prospectos Inactivos",111,1,1,1,2022,106400,106400,"Prendas Publicitarias","BORDADO",""],"NACIONAL NOVA S.A.":["Cuentas en Alerta",331,3,3,1,2024,30094,10031,"Prendas Publicitarias","BORDADO",""],"SABANA DYNAMICS S.A.S":["Prospectos Inactivos",121,1,2,1,2022,46200,46200,"Prendas Publicitarias","BORDADO",""],"RED BRILLO S.A.":["Nuevos Aliados",231,2,3,1,2023,184227,92113,"Prendas Publicitarias","BORDADO",""],"FIRMA CONSULTING S.A.S.":["Prospectos Inactivos",121,1,2,1,2022,6000,6000,"Prendas Publicitarias","BORDADO",""],"SERVICIOS LOGIX MINERA S.A.S.":["Socios Estratégicos",541,5,4,1,2026,254952,50990,"Prendas Publicitarias","BORDADO",""],"CORDIAL PARTNERS S.A.S.":["Clientes Corporativos Fieles",443,4,4,3,2025,1060850,265212,"Prendas Publicitarias","BORDADO","CACHUCHAS"],"SERVICIOS GLOBAL E.S.P.":["Clientes Corporativos Fieles",441,4,4,1,2025,48809,12202,"Prendas Publicitarias","BORDADO",""],"SISTEMAS CAPITA S.A.S":["Prospectos Inactivos",111,1,1,1,2022,25600,25600,"Prendas Publicitarias","BORDADO",""],"GRUPO VITA MINERA S.A.S.":["Prospectos Inactivos",121,1,2,1,2023,199715,99857,"Prendas Publicitarias","BORDADO",""],"ORIENTE PARTNERS S.A.S":["Cuentas en Alerta",342,3,4,2,2024,448021,149340,"Prendas Publicitarias","SUDADERA","BORDADO"],"CORPORACIÓN ORIENTE ALIMENTARIA LTDA.":["Nuevos Aliados",222,2,2,2,2023,307948,153974,"Prendas Publicitarias","BORDADO",""],"TECNOLOGÍA LINEA S.A.S.":["Nuevos Aliados",232,2,3,2,2023,335652,167826,"Dotaciones Administrativas Uniformes","PANTALON CLASICO","CAMIBUSO TIPO POLO"],"DISTRIBUIDORA ENLACE SALUD LTDA.":["Clientes Corporativos Fieles",444,4,4,4,2025,8392090,2098022,"Prendas Publicitarias","BORDADO","ESTAMPADO"],"DISTRIBUIDORA SUR BEBIDAS S.A.S.":["Prospectos Inactivos",111,1,1,1,2022,66600,66600,"Prendas Publicitarias","BORDADO",""],"DISTRIBUIDORA SIERRA LOGÍSTICA S.A.S.":["Prospectos Inactivos",111,1,1,1,2022,43500,43500,"Prendas Publicitarias","BORDADO",""],"APEX CONNECT S.A.S":["Prospectos Inactivos",113,1,1,3,2022,2160000,2160000,"Prendas Publicitarias","BOLSA",""],"UNIDAD DE SALUD CENTRAL LTDA.":["Nuevos Aliados",234,2,3,4,2023,5524000,2762000,"Dotaciones Administrativas Uniformes","CAMISA EN OXFORD","JEAN CLASICO PROCESADO"],"SERVICIOS PÚBLICOS LINEA E.S.P.":["Cuentas en Alerta",354,3,5,4,2024,5317500,2658750,"Dotaciones Industriales - Uniformes","BOTA CERRADA  CUERO","JEAN CLSICO INDUSTRIAL"],"PRAXIS TECH E.S.P.":["Nuevos Aliados",245,2,4,5,2023,18228571,18228571,"Dotaciones Administrativas Uniformes","ZAPATOS","BOTA PUNTA SEGURIDAD CUERO"],"LLANO CONNECT E.S.P.":["Nuevos Aliados",245,2,4,5,2023,11475000,11475000,"Dotaciones Industriales - Uniformes","UNIFORME","ZAPATOS"],"CONSTRUCTORA ALFA TEXTIL S.A.S.":["Cuentas en Alerta",354,3,5,4,2024,2978150,1489075,"Dotaciones Administrativas Uniformes","ZAPATOS","BATA DACRON"],"ANDINA NORTE TEXTIL S.A.":["Nuevos Aliados",245,2,4,5,2023,45186000,45186000,"Dotaciones Administrativas Uniformes","ZAPATO TIPO  TENIS","SUDADERA"],"COOPERATIVA NUEVA S.A.S.":["Nuevos Aliados",214,2,1,4,2023,3608000,3608000,"Dotaciones Industriales - Uniformes","UNIFORME",""],"INVERSIONES CORDIAL ALIMENTARIA S.A.":["Cuentas en Alerta",323,3,2,3,2024,1025358,512679,"Dotaciones Industriales - Uniformes","UNIFORME",""],"PROCESOS NOVA FINANCIERA S.A.":["Prospectos Inactivos",113,1,1,3,2023,1200000,1200000,"Prendas Publicitarias","TULAS",""],"SISTEMAS DELTA E.S.P.":["Nuevos Aliados",241,2,4,1,2023,262941,262941,"Prendas Publicitarias","CHAQUETA","SUDADERA"],"COMERCIALIZADORA STRATA S.A.":["Socios Estratégicos",554,5,5,4,2025,3766000,1883000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","SUDADERA"],"ENLACE VENTURES S.A.S.":["Nuevos Aliados",211,2,1,1,2023,50252,50252,"Prendas Publicitarias","SUDADERA",""],"SOLUCIONES DELTA MINERA S.A.":["Nuevos Aliados",223,2,2,3,2023,920000,920000,"Prendas Publicitarias","RABOEGALLOS",""],"COOPERATIVA NUEVA S.A.S.":["Socios Estratégicos",554,5,5,4,2025,4855000,1618333,"Dotaciones Industriales - Uniformes","UNIFORME","CAMIBUSO TIPO POLO"],"UNIVERSIDAD INTEGRAL ANDINA":["Nuevos Aliados",222,2,2,2,2023,573748,573748,"Prendas Publicitarias","RABOEGALLOS",""],"ORIENTE PARTNERS LTDA.":["Nuevos Aliados",243,2,4,3,2023,2576504,2576504,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","CAMISETA EN JERSEY 180 GRS"],"CORPORACIÓN PUNTO AGROINDUSTRIAL S.A.S.":["Cuentas en Alerta",344,3,4,4,2024,3350986,1675493,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CAMISA EN OXFORD"],"ALIANZA TRIPLE COMERCIAL S.A.":["Nuevos Aliados",232,2,3,2,2023,794000,794000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CACHUCHAS"],"AGROPECUARIA SABANA S.A.S.":["Nuevos Aliados",231,2,3,1,2023,16000,16000,"Dotaciones Industriales - Uniformes","PROGRAMAS","BORDADO"],"GRUPO GLOBAL MÉDICA LTDA.":["Nuevos Aliados",231,2,3,1,2023,16000,16000,"Dotaciones Industriales - Uniformes","PROGRAMAS","BORDADO"],"SOLUCIONES TRIPLE S.A.":["Cuentas en Alerta",341,3,4,1,2025,67376,22459,"Prendas Publicitarias","BORDADO","PROGRAMAS"],"PROCESOS LLANO S.A.S.":["Clientes Corporativos Fieles",442,4,4,2,2025,573084,191028,"Dotaciones Industriales - Uniformes","CAMIBUSO TIPO POLO","PANTALON EN DRIL CLASICO"],"DISTRIBUIDORA FUTURA INTEGRAL S.A.S.":["Nuevos Aliados",244,2,4,4,2023,3155000,3155000,"Dotaciones Administrativas Uniformes","CAMISA POPELINA","JEAN CLSICO INDUSTRIAL"],"DISTRIBUIDORA UNION LOGÍSTICA E.S.P.":["Nuevos Aliados",243,2,4,3,2023,974000,974000,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","CAMIBUSO TIPO POLO"],"SERVICIOS PÚBLICOS CORDIAL E.S.P.":["Nuevos Aliados",244,2,4,4,2023,8988000,8988000,"Dotaciones Administrativas Uniformes","OVEROLES EN DRIL  BORDADO","CALZADO DAMA PARA OFICINA"],"DISTRIBUIDORA PUNTO COMERCIAL S.A.":["Socios Estratégicos",555,5,5,5,2025,18687625,6229208,"Dotaciones Administrativas Uniformes","CAMISA TELA LAFAYETTE","PANTALON CLASICO"],"ANDINA AVANCE EDUCATIVA E.S.P.":["Clientes Corporativos Fieles",455,4,5,5,2025,19608500,6536167,"Dotaciones Industriales - Uniformes","PANTALON DRIL CAMUFLADO","PANTALON CLASICO"],"CONSULTORA CORDIAL EDUCATIVA LTDA.":["Nuevos Aliados",222,2,2,2,2023,360000,360000,"Dotaciones Administrativas Uniformes","PANTALON CLASICO",""],"DISTRIBUIDORA CENTRAL COMERCIAL E.S.P.":["Cuentas en Alerta",344,3,4,4,2024,6098000,3049000,"Dotaciones Administrativas Uniformes","CAMISA DAMA ADMINISTRATIVA","CAMISA TELA LAFAYETTE"],"CONSULTORA STRATA SALUD E.S.P.":["Nuevos Aliados",244,2,4,4,2023,4411000,4411000,"Dotaciones Industriales - Uniformes","OVEROL ANTIFLUIDO","CAMISA COMBINADA"],"DISTRIBUIDORA LOGIX LTDA.":["Clientes Corporativos Fieles",443,4,4,3,2025,2654450,1327225,"Prendas Publicitarias","PONCHOS","CAMIBUSO TIPO POLO"],"PROCESADORA AGRÍCOLA ORIENTE S.A.":["Nuevos Aliados",255,2,5,5,2023,19761500,19761500,"Prendas Publicitarias","CACHUCHAS","PONCHOS"],"ANDES VENTURES S.A.S.":["Nuevos Aliados",212,2,1,2,2023,365546,365546,"Prendas Publicitarias","PONCHOS",""],"CONSULTORA DELTA LOGÍSTICA LTDA.":["Nuevos Aliados",212,2,1,2,2023,600000,600000,"Prendas Publicitarias","PONCHOS",""],"SERVICIOS PÚBLICOS ORIENTE E.S.P.":["Nuevos Aliados",222,2,2,2,2023,528000,528000,"Dotaciones Administrativas Uniformes","CHAQUETA","PAVAS"],"NOVA CAPITAL S.A.":["Nuevos Aliados",233,2,3,3,2023,2179000,2179000,"Dotaciones Industriales - Uniformes","CAMISA EN INDIGO","JEAN CLSICO INDUSTRIAL"],"ALTA NETWORKS S.A.S":["Cuentas en Alerta",353,3,5,3,2024,2520840,1260420,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","CAMISA EN INDIGO"],"AVANCE NETWORKS S.A.S.":["Cuentas en Alerta",354,3,5,4,2024,3443051,1721525,"Dotaciones Administrativas Uniformes","CAMISA EN OXFORD","CAMIBUSO TIPO POLO"],"PACÍFICO TECH LTDA.":["Nuevos Aliados",245,2,4,5,2024,10423000,5211500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"CORPORACIÓN ALTA FINANCIERA S.A.":["Socios Estratégicos",542,5,4,2,2025,606000,202000,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","JEAN STRECH  DAMA"],"INVERSIONES SIERRA LOGÍSTICA E.S.P.":["Socios Estratégicos",555,5,5,5,2026,552435588,138108897,"Dotaciones Industriales - Uniformes","CAMISA EN DRIL MANGA LARGA","JEAN CLSICO INDUSTRIAL"],"INTEGRAL ALFA S.A.S":["Cuentas en Alerta",343,3,4,3,2024,1481731,740866,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"ALIANZA CLAVE S.A.S.":["Nuevos Aliados",243,2,4,3,2023,1653446,1653446,"Prendas Publicitarias","CAMISETA   ESTAMPADA","JEAN CLSICO INDUSTRIAL"],"FUTURA CONNECT S.A.S.":["Nuevos Aliados",233,2,3,3,2023,1173000,1173000,"Dotaciones Industriales - Uniformes","CAMISA EN INDIGO","JEAN CLSICO INDUSTRIAL"],"CENTRAL PARTNERS S.A.S.":["Nuevos Aliados",234,2,3,4,2023,3825000,3825000,"Dotaciones Industriales - Uniformes","CAMISA EN INDIGO","JEAN CLSICO INDUSTRIAL"],"CONSULTORA LLANO S.A.S.":["Nuevos Aliados",232,2,3,2,2023,457100,457100,"Prendas Publicitarias","CAMISETA   ESTAMPADA","ESTAMPADO"],"CORPORACIÓN NORTE E.S.P.":["Nuevos Aliados",222,2,2,2,2023,775000,775000,"Dotaciones Industriales - Uniformes","DELANTAL","COFIA"],"CORE LOGISTICS S.A.":["Nuevos Aliados",215,2,1,5,2023,12413000,12413000,"Dotaciones Administrativas Uniformes","CONJUNTO 3 PZ",""],"CONSTRUCTORA GLOBAL S.A.":["Nuevos Aliados",223,2,2,3,2023,1888600,1888600,"Prendas Publicitarias","CARTUCHERA ESTAMPADA",""],"ALIANZA ALFA ENERGÉTICA S.A.S.":["Nuevos Aliados",211,2,1,1,2023,144000,144000,"Dotaciones Industriales - Uniformes","CHALECO",""],"DISTRIBUIDORA LINEA BEBIDAS S.A.S.":["Socios Estratégicos",533,5,3,3,2025,2265000,1132500,"Dotaciones Administrativas Uniformes","CAMISA TELA LAFAYETTE","CAMIBUSO TIPO POLO"],"ANDINA OPTIMA S.A.S.":["Nuevos Aliados",211,2,1,1,2023,151260,151260,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"SERVICIOS ORIENTE MINERA LTDA.":["Nuevos Aliados",243,2,4,3,2023,2599580,2599580,"Prendas Publicitarias","CAMISETA   ESTAMPADA","CACHUCHAS"],"NACIONAL OMEGA LTDA.":["Socios Estratégicos",543,5,4,3,2025,1939413,646471,"Dotaciones Administrativas Uniformes","CAMISA EN OXFORD","CAMIBUSO TIPO POLO"],"CONSTRUCTORA NEXUS S.A.":["Nuevos Aliados",212,2,1,2,2023,312000,312000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"CLAVE NETWORKS LTDA.":["Nuevos Aliados",211,2,1,1,2023,33500,33500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"CENTRO ACTIVA SALUD E.S.P.":["Nuevos Aliados",212,2,1,2,2023,526500,526500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"PROCESADORA AGRÍCOLA METRO LTDA.":["Cuentas en Alerta",323,3,2,3,2024,2486800,1243400,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"OPERACIONES PUNTO MINERA E.S.P.":["Cuentas en Alerta",323,3,2,3,2024,1143000,571500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"SIERRA SERVICES S.A.S":["Socios Estratégicos",532,5,3,2,2025,454012,151337,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"LLANO ASSETS LTDA.":["Nuevos Aliados",211,2,1,1,2023,240000,240000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"DISTRIBUIDORA CAPITA S.A.S.":["Clientes Corporativos Fieles",433,4,3,3,2025,2268000,756000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"DISTRIBUIDORA CLAVE E.S.P.":["Cuentas en Alerta",323,3,2,3,2024,1438000,719000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","TOALLA MARCADA"],"INTEGRAL CLAVE ALIMENTARIA S.A.S.":["Nuevos Aliados",211,2,1,1,2023,150000,150000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"PROTEK PROJECTS LTDA.":["Nuevos Aliados",232,2,3,2,2023,304311,304311,"Prendas Publicitarias","CAMISETA   ESTAMPADA","CAMISETA EN JERSEY 180 GRS"],"GRUPO OPTIMA COMERCIAL E.S.P.":["Clientes Corporativos Fieles",444,4,4,4,2025,5307186,2653593,"Prendas Publicitarias","CACHUCHAS","CAMISETA   ESTAMPADA"],"CENTRAL CONNECT S.A.S":["Nuevos Aliados",223,2,2,3,2023,2200000,2200000,"Prendas Publicitarias","CAMISETA   ESTAMPADA","CACHUCHAS"],"INTEGRAL LOGIX FINANCIERA S.A.":["Nuevos Aliados",213,2,1,3,2023,1700000,1700000,"Prendas Publicitarias","CAMISETA   ESTAMPADA",""],"METRO CONNECT S.A.S":["Nuevos Aliados",221,2,2,1,2023,200000,200000,"Prendas Publicitarias","CAMISETA   ESTAMPADA",""],"CONSTRUCTORA HORIZONTE INGENIERÍA S.A.S.":["Cuentas en Alerta",322,3,2,2,2024,836400,418200,"Prendas Publicitarias","CAMISETA   ESTAMPADA","CHALECO"],"DISTRIBUIDORA CORDIAL S.A.S":["Nuevos Aliados",222,2,2,2,2023,700000,700000,"Prendas Publicitarias","CAMISETA   ESTAMPADA",""],"NACIONAL NOVA E.S.P.":["Socios Estratégicos",522,5,2,2,2025,437849,218924,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CAMISA EN OXFORD"],"CONSULTORA NEXUS SALUD S.A.":["Nuevos Aliados",221,2,2,1,2023,108404,108404,"Dotaciones Administrativas Uniformes","CAMISA EN OXFORD","PROGRAMACION DE BORDADO"],"AUTOMOTRIZ ORIENTE S.A.S.":["Nuevos Aliados",213,2,1,3,2023,1200000,1200000,"Dotaciones Administrativas Uniformes","CAMISA COMBINADA",""],"INDUSTRIAS UNION FINANCIERA LTDA.":["Nuevos Aliados",222,2,2,2,2023,330000,330000,"Prendas Publicitarias","CACHUCHAS",""],"DISTRIBUIDORA ANDES ENERGÉTICA S.A.S.":["Nuevos Aliados",221,2,2,1,2023,110000,110000,"Prendas Publicitarias","CACHUCHAS",""],"SISTEMAS BRILLO S.A.":["Cuentas en Alerta",331,3,3,1,2024,74538,37269,"Prendas Publicitarias","BORDADO",""],"DISTRIBUIDORA PUNTO COMERCIAL S.A.":["Nuevos Aliados",211,2,1,1,2023,10800,10800,"Prendas Publicitarias","BORDADO",""],"SISTEMAS TRIPLE S.A.S.":["Clientes Corporativos Fieles",441,4,4,1,2025,220334,73445,"Prendas Publicitarias","BORDADO","PROGRAMAS"],"CONSTRUCTORA FUERZA TEXTIL S.A.":["Nuevos Aliados",221,2,2,1,2023,270000,270000,"Prendas Publicitarias","BALLETIYA ESTAMPADA",""],"APEX SERVICES E.S.P.":["Nuevos Aliados",211,2,1,1,2023,0,0,"Prendas Publicitarias","BALLETIYA ESTAMPADA",""],"TECNOLOGÍA IMPULSO ALIMENTARIA S.A.S.":["Cuentas en Alerta",334,3,3,4,2024,2800000,1400000,"Dotaciones Médicas y hospitalarias, Unif","BATA EN ANTI FLUIDO",""],"DISTRIBUIDORA NOVA INTEGRAL S.A.":["Socios Estratégicos",554,5,5,4,2026,7901517,2633839,"Dotaciones Administrativas Uniformes","CACHUCHAS","CAMISA EN OXFORD"],"DISTRIBUIDORA PRAXIS COMERCIAL LTDA.":["Cuentas en Alerta",343,3,4,3,2024,2499400,2499400,"Dotaciones Administrativas Uniformes","PANTALON CLASICO","UNIFORME"],"COOPERATIVA REGIONAL ":["Socios Estratégicos",545,5,4,5,2025,44092100,22046050,"Dotaciones Administrativas Uniformes","CAMIBUSO TIPO POLO","CAMISA TELA LAFAYETTE"],"ALIANZA IMPULSO E.S.P.":["Cuentas en Alerta",311,3,1,1,2024,106000,106000,"Dotaciones Industriales - Uniformes","UNIFORME",""],"CENTRO PRAXIS ENERGÉTICA E.S.P.":["Cuentas en Alerta",334,3,3,4,2024,5288000,5288000,"Dotaciones Industriales - Uniformes","UNIFORME","CONJUNTO 2 PZ"],"HORIZONTE NETWORKS LTDA.":["Cuentas en Alerta",314,3,1,4,2024,6171865,6171865,"Dotaciones Industriales - Uniformes","TELA",""],"CONSTRUCTORA DELTA MÉDICA E.S.P.":["Nuevos Aliados",213,2,1,3,2024,2428000,2428000,"Dotaciones Industriales - Uniformes","TELA",""],"VALORE PROJECTS S.A.":["Clientes Corporativos Fieles",455,4,5,5,2025,145859400,72929700,"Dotaciones Administrativas Uniformes","CAMIBUSO TIPO POLO","PANTALON CLASICO"],"PUNTO CONSULTING S.A.S":["Clientes Corporativos Fieles",445,4,4,5,2025,13859500,6929750,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","SUDADERA"],"SISTEMAS NORTE S.A.":["Cuentas en Alerta",332,3,3,2,2024,461000,461000,"Prendas Publicitarias","PONCHOS","RABOEGALLOS"],"AVÍCOLA VITA LTDA.":["Clientes Corporativos Fieles",444,4,4,4,2025,3921465,1960732,"Prendas Publicitarias","PONCHOS","PONCHO ARTESANAL BORDADO"],"TECNOLOGÍA PROTEK S.A.S.":["Clientes Corporativos Fieles",455,4,5,5,2025,18318000,9159000,"Dotaciones Administrativas Uniformes","CAMIBUSO TIPO POLO","CHALECO"],"COMERCIALIZADORA ALFA S.A.S":["Cuentas en Alerta",341,3,4,1,2024,0,0,"Dotaciones Administrativas Uniformes","PANTALON DAMA ADMINISTRATIVO","PANTALON DRIL CAMUFLADO"],"CONSTRUCTORA AVANCE AGROINDUSTRIAL S.A.S.":["Socios Estratégicos",555,5,5,5,2025,34382500,17191250,"Dotaciones Administrativas Uniformes","CAMISA EN OXFORD","JEAN CLASICO PROCESADO"],"INDUSTRIAS IMPULSO S.A.S.":["Cuentas en Alerta",354,3,5,4,2024,5096000,5096000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN STRECH  DAMA"],"INDUSTRIAS CAPITA S.A.S.":["Clientes Corporativos Fieles",454,4,5,4,2025,8203000,4101500,"Dotaciones Administrativas Uniformes","CAMISA TELA LAFAYETTE","JEAN CLSICO INDUSTRIAL"],"NACIONAL HORIZONTE S.A.S":["Socios Estratégicos",545,5,4,5,2025,15854500,7927250,"Dotaciones Administrativas Uniformes","CAMISA TELA LAFAYETTE","PANTALON LINO"],"CENTRO PACÍFICO S.A.S":["Clientes Corporativos Fieles",455,4,5,5,2025,130279000,65139500,"Dotaciones Administrativas Uniformes","CAMISA EN LINO MANGA LARGA","PANTALON LINO"],"IMPULSO CONNECT S.A.S.":["Cuentas en Alerta",322,3,2,2,2024,516000,516000,"Dotaciones Industriales - Uniformes","PANTALON DRIL CAMUFLADO","CAMIBUSO TIPO POLO"],"OMEGA ASSETS S.A.S":["Cuentas en Alerta",332,3,3,2,2024,571429,571429,"Dotaciones Industriales - Uniformes","LINEA DE VIDA","ESLINGA"],"SOLUCIONES LINEA S.A.S":["Cuentas en Alerta",332,3,3,2,2024,571429,571429,"Dotaciones Industriales - Uniformes","LINEA DE VIDA","ESLINGA"],"AGROPECUARIA TERRA S.A.":["Socios Estratégicos",544,5,4,4,2025,5962000,2981000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLASICO PROCESADO"],"PRAXIS VENTURES S.A.S.":["Cuentas en Alerta",333,3,3,3,2024,1801000,1801000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN STRECH  DAMA"],"ALFA LOGISTICS S.A.S.":["Nuevos Aliados",234,2,3,4,2024,2901000,2901000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN STRECH  DAMA"],"AUTOMOTRIZ PROTEK LTDA.":["Cuentas en Alerta",332,3,3,2,2024,492000,492000,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","JEAN STRECH  DAMA"],"OPERACIONES DELTA S.A.S.":["Clientes Corporativos Fieles",443,4,4,3,2025,2435500,1217750,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"TECNOLOGÍA FUTURA TEXTIL S.A.S.":["Cuentas en Alerta",334,3,3,4,2024,3160000,3160000,"Dotaciones Industriales - Uniformes","BOTA PUNTA SEGURIDAD CUERO","JEAN CLSICO INDUSTRIAL"],"METRO GROUP S.A.":["Cuentas en Alerta",321,3,2,1,2024,124000,124000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"ALIANZA FIRMA SALUD E.S.P.":["Cuentas en Alerta",332,3,3,2,2024,724000,724000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CAMISA EN OXFORD"],"ORIENTE VENTURES S.A.S.":["Cuentas en Alerta",322,3,2,2,2024,656495,656495,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","FLETE"],"INVERSIONES CENTRAL MINERA S.A.":["Socios Estratégicos",522,5,2,2,2025,687000,343500,"Prendas Publicitarias","ESTAMPADO",""],"INVERSIONES PROTEK MINERA E.S.P.":["Cuentas en Alerta",321,3,2,1,2024,60504,60504,"Prendas Publicitarias","ESTAMPADO",""],"ACTIVA SYSTEMS S.A.":["Cuentas en Alerta",313,3,1,3,2024,1006000,1006000,"Prendas Publicitarias","ESTAMPADO",""],"INSTITUTO NOVA ANDINO":["Clientes Corporativos Fieles",455,4,5,5,2025,10248200,5124100,"Prendas Publicitarias","PONCHO ARTESANAL BORDADO","BOLSA"],"PROCESOS CAPITA S.A.S.":["Clientes Corporativos Fieles",454,4,5,4,2025,2841200,1420600,"Dotaciones Administrativas Uniformes","CAMISA EN LINO MANGA LARGA","PANTALON LINO"],"INVERSIONES TRIPLE S.A.":["Clientes Corporativos Fieles",433,4,3,3,2025,1140600,570300,"Dotaciones Industriales - Uniformes","CONFECCION","BORDADO"],"INVERSIONES CAPITA LTDA.":["Cuentas en Alerta",344,3,4,4,2024,2936000,2936000,"Dotaciones Industriales - Uniformes","CHALECO","CAMIBUSO TIPO POLO"],"CORPORACIÓN EDUCATIVA DEL PROGRESO CENTRAL":["Cuentas en Alerta",322,3,2,2,2024,317647,317647,"Dotaciones Industriales - Uniformes","CHALECO",""],"SISTEMAS CAPITA ENERGÉTICA S.A.S.":["Nuevos Aliados",213,2,1,3,2024,864000,864000,"Dotaciones Industriales - Uniformes","CHALECO",""],"CENTRO ACADÉMICO NOVA REGIONAL":["Nuevos Aliados",244,2,4,4,2024,5707000,5707000,"Dotaciones Médicas y hospitalarias, Unif","BATOLA","BUFANDA TEJIDA"],"ALIANZA PUNTO S.A.S.":["Cuentas en Alerta",321,3,2,1,2024,171429,171429,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"AGROINDUSTRIAL SIERRA LTDA.":["Cuentas en Alerta",311,3,1,1,2024,63000,63000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"INDUSTRIAS ANDES LTDA.":["Cuentas en Alerta",311,3,1,1,2024,227874,227874,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"DISTRIBUIDORA VITA MÉDICA E.S.P.":["Cuentas en Alerta",314,3,1,4,2024,3193000,3193000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"PACÍFICO SERVICES LTDA.":["Socios Estratégicos",534,5,3,4,2025,2931000,1465500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"DISTRIBUIDORA NEXUS COMERCIAL LTDA.":["Socios Estratégicos",523,5,2,3,2025,2577000,1288500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"DISTRIBUIDORA APEX COMERCIAL S.A.":["Cuentas en Alerta",312,3,1,2,2024,524706,524706,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"OPERACIONES CORDIAL S.A.S.":["Clientes Corporativos Fieles",433,4,3,3,2025,1149200,574600,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","BUSO"],"PROCESOS SUR LOGÍSTICA S.A.S.":["Cuentas en Alerta",321,3,2,1,2024,0,0,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"GRUPO TERRA S.A.":["Cuentas en Alerta",312,3,1,2,2024,627000,627000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"NEXUS LOGISTICS E.S.P.":["Cuentas en Alerta",311,3,1,1,2024,155000,155000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"ENLACE NETWORKS E.S.P.":["Clientes Corporativos Fieles",423,4,2,3,2025,1423000,711500,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"GRUPO NORTE AGROINDUSTRIAL LTDA.":["Cuentas en Alerta",323,3,2,3,2024,1990000,1990000,"Dotaciones Administrativas Uniformes","CAMISA TELA LAFAYETTE","CAMIBUSO TIPO POLO"],"AUTOMOTRIZ CORDIAL ":["Cuentas en Alerta",322,3,2,2,2024,720000,720000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"VERSA VENTURES S.A.S.":["Cuentas en Alerta",312,3,1,2,2024,372000,372000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"ANDES SOLUTIONS S.A.S":["Socios Estratégicos",555,5,5,5,2025,15086500,7543250,"Prendas Publicitarias","CAMIBUSO TIPO POLO","CACHUCHAS"],"RED PUNTO LTDA.":["Nuevos Aliados",234,2,3,4,2024,3248000,3248000,"Dotaciones Administrativas Uniformes","CAMISA EN OXFORD","CAMIBUSO TIPO POLO"],"SERVICIOS HORIZONTE LOGÍSTICA LTDA.":["Cuentas en Alerta",325,3,2,5,2024,15060000,15060000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"FUTURA GROUP S.A.S.":["Clientes Corporativos Fieles",443,4,4,3,2025,1785882,892941,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CAMISA EN OXFORD"],"SISTEMAS CENTRAL S.A.S.":["Clientes Corporativos Fieles",443,4,4,3,2025,1740000,870000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CAMISA EN OXFORD"],"SERVICIOS ALTA LOGÍSTICA E.S.P.":["Cuentas en Alerta",322,3,2,2,2024,527000,527000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"UNIVERSIDAD DEL PROGRESO DE COLOMBIA":["Nuevos Aliados",224,2,2,4,2024,2949580,2949580,"Prendas Publicitarias","CACHUCHAS","CAMIBUSO TIPO POLO"],"PROCESOS ACTIVA LTDA.":["Cuentas en Alerta",332,3,3,2,2024,610000,610000,"Prendas Publicitarias","CACHUCHAS","CANGURO"],"STRATA SOLUTIONS E.S.P.":["Cuentas en Alerta",311,3,1,1,2024,110000,110000,"Dotaciones Administrativas Uniformes","CAMISA BLANCA DAMA BORDADA",""],"COMERCIALIZADORA NEXUS S.A.S":["Cuentas en Alerta",312,3,1,2,2024,756303,756303,"Prendas Publicitarias","CACHUCHAS",""],"UNION VENTURES S.A.S.":["Cuentas en Alerta",321,3,2,1,2024,18000,18000,"Prendas Publicitarias","BORDADO",""],"CLÍNICA CENTRAL S.A.S.":["Cuentas en Alerta",321,3,2,1,2024,13446,13446,"Prendas Publicitarias","BORDADO",""],"DISTRIBUIDORA ALFA COMERCIAL E.S.P.":["Cuentas en Alerta",312,3,1,2,2024,839600,839600,"Prendas Publicitarias","BORDADO",""],"INTEGRAL TRIPLE S.A.":["Socios Estratégicos",531,5,3,1,2026,190120,63373,"Prendas Publicitarias","BORDADO",""],"PROCESOS ENLACE S.A.S.":["Cuentas en Alerta",311,3,1,1,2024,20000,20000,"Prendas Publicitarias","BORDADO",""],"PROCESADORA AGRÍCOLA ORIENTE S.A.S.":["Cuentas en Alerta",311,3,1,1,2024,30000,30000,"Prendas Publicitarias","BORDADO",""],"ANDINA FIRMA AGROINDUSTRIAL LTDA.":["Cuentas en Alerta",321,3,2,1,2024,98000,98000,"Prendas Publicitarias","BORDADO",""],"CLÍNICA NOVA S.A.S.":["Cuentas en Alerta",314,3,1,4,2024,6722689,6722689,"Prendas Publicitarias","MALETIN",""],"DISTRIBUIDORA PRIME MINERA LTDA.":["Cuentas en Alerta",333,3,3,3,2024,1875000,1875000,"Prendas Publicitarias","BOLSO EN LONA","BOLSA"],"UNIVERSIDAD ABIERTA NACIONAL":["Cuentas en Alerta",312,3,1,2,2024,560000,560000,"Prendas Publicitarias","BOLSA",""],"INDUSTRIAS TRIPLE LTDA.":["Clientes Corporativos Fieles",455,4,5,5,2025,21600381,21600381,"Dotaciones Administrativas Uniformes","PANTALON CLASICO","CAMISA DAMA ADMINISTRATIVA"],"SUR LOGISTICS S.A.S.":["Clientes Corporativos Fieles",423,4,2,3,2025,1242000,1242000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","UNIFORME"],"COOPERATIVA ANDINA ":["Socios Estratégicos",545,5,4,5,2025,16358000,16358000,"Dotaciones Administrativas Uniformes","CAMISA TELA LAFAYETTE","PANTALON LINO"],"DISTRIBUIDORA FUERZA S.A.S.":["Socios Estratégicos",513,5,1,3,2025,1150000,1150000,"Dotaciones Industriales - Uniformes","UNIFORME",""],"NOVA PROJECTS S.A.S":["Clientes Corporativos Fieles",414,4,1,4,2025,7506819,7506819,"Dotaciones Industriales - Uniformes","UNIFORME",""],"CONSULTORA PRIME S.A.S.":["Clientes Corporativos Fieles",423,4,2,3,2025,948352,948352,"Prendas Publicitarias","TULAS","BORDADO"],"NACIONAL LOGIX LTDA.":["Cuentas en Alerta",345,3,4,5,2025,30160715,30160715,"Prendas Publicitarias","CHAQUETA","CAMIBUSO TIPO POLO"],"COMERCIALIZADORA HORIZONTE LTDA.":["Clientes Corporativos Fieles",434,4,3,4,2025,2708000,2708000,"Prendas Publicitarias","SUDADERA","CONJUNTO 2 PZ"],"AUTOMOTRIZ CAPITA LTDA.":["Socios Estratégicos",532,5,3,2,2025,320000,320000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","PROGRAMAS"],"OPERACIONES PRIME AGROINDUSTRIAL LTDA.":["Socios Estratégicos",532,5,3,2,2026,457000,228500,"Prendas Publicitarias","CACHUCHAS","BORDADO"],"GRUPO CONSTRUCTOR MERAKI SAS \"ZOMAC\"":["Socios Estratégicos",532,5,3,2,2026,322500,161250,"Prendas Publicitarias","BORDADO","PROGRAMAS"],"CONSTRUCTORA APEX INGENIERÍA S.A.S.":["Socios Estratégicos",531,5,3,1,2025,175000,175000,"Prendas Publicitarias","ESTAMPADO","BORDADO"],"LLANO NETWORKS S.A.S":["Socios Estratégicos",521,5,2,1,2025,30252,30252,"Prendas Publicitarias","BORDADO","PROGRAMAS"],"TECNOLOGÍA ORIENTE LTDA.":["Clientes Corporativos Fieles",445,4,4,5,2025,38653000,38653000,"Dotaciones Administrativas Uniformes","CHAQUETA","CAMIBUSO TIPO POLO"],"INDUSTRIAS SIERRA S.A.S.":["Clientes Corporativos Fieles",455,4,5,5,2025,17962000,17962000,"Dotaciones Administrativas Uniformes","OVEROLES EN DRIL  BORDADO","CAMISA TELA LAFAYETTE"],"COMERCIALIZADORA CENTRAL LTDA.":["Socios Estratégicos",534,5,3,4,2025,3330000,3330000,"Dotaciones Administrativas Uniformes","PANTALON CLASICO","BOTA PUNTA SEGURIDAD CUERO"],"INTEGRAL CLAVE E.S.P.":["Socios Estratégicos",544,5,4,4,2026,3856900,1928450,"Dotaciones Industriales - Uniformes","KIT UNIFORME","CAMISA TELA LAFAYETTE"],"CONECTA TRIPLE S.A.S.":["Clientes Corporativos Fieles",443,4,4,3,2025,2641000,2641000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","PANTALON CLASICO"],"TECNOLOGÍA SABANA TEXTIL LTDA.":["Clientes Corporativos Fieles",443,4,4,3,2025,1401000,1401000,"Dotaciones Industriales - Uniformes","CAMISA EN INDIGO","JEAN CLSICO INDUSTRIAL"],"CORPORACIÓN EDUCATIVA INTEGRAL ANDINA":["Clientes Corporativos Fieles",413,4,1,3,2025,1870000,1870000,"Prendas Publicitarias","PONCHO ARTESANAL BORDADO",""],"PROCESOS VALORE MÉDICA S.A.S.":["Socios Estratégicos",532,5,3,2,2026,825000,412500,"Dotaciones Industriales - Uniformes","OVEROLES EN DRIL  BORDADO","CAMIBUSO TIPO POLO"],"COMERCIALIZADORA AVANCE S.A.":["Clientes Corporativos Fieles",411,4,1,1,2025,200000,200000,"Dotaciones Industriales - Uniformes","OVEROL ANTIFLUIDO",""],"ALFA DYNAMICS E.S.P.":["Socios Estratégicos",534,5,3,4,2026,3128000,1564000,"Dotaciones Industriales - Uniformes","KIT UNIFORME","BORDADO"],"AGROPECUARIA ENLACE S.A.S.":["Clientes Corporativos Fieles",434,4,3,4,2025,4508000,4508000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"PUNTO GROUP E.S.P.":["Clientes Corporativos Fieles",444,4,4,4,2025,7919000,7919000,"Dotaciones Industriales - Uniformes","BOTA CERRADA  CUERO","JEAN CLSICO INDUSTRIAL"],"APEX TECH LTDA.":["Socios Estratégicos",533,5,3,3,2025,2378000,2378000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"ANDES SOLUTIONS LTDA.":["Clientes Corporativos Fieles",434,4,3,4,2025,5552000,5552000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN STRECH  DAMA"],"RED APEX INDUSTRIAL S.A.":["Clientes Corporativos Fieles",434,4,3,4,2025,3071000,3071000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","JEAN CLSICO INDUSTRIAL"],"FIRMA CAPITAL E.S.P.":["Socios Estratégicos",544,5,4,4,2025,8455000,8455000,"Prendas Publicitarias","CAMISETA   ESTAMPADA","CHALECO"],"SERVICIOS SABANA AGROINDUSTRIAL LTDA.":["Socios Estratégicos",522,5,2,2,2025,406000,406000,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","JEAN STRECH  DAMA"],"DISTRIBUIDORA CAPITA LOGÍSTICA LTDA.":["Clientes Corporativos Fieles",433,4,3,3,2025,889109,889109,"Dotaciones Industriales - Uniformes","JEAN CLSICO INDUSTRIAL","CAMIBUSO TIPO POLO"],"OPERACIONES METRO S.A.S":["Clientes Corporativos Fieles",443,4,4,3,2025,841000,841000,"Dotaciones Industriales - Uniformes","CAMISA EN INDIGO","CAMIBUSO TIPO POLO"],"CONSULTORA UNION FINANCIERA LTDA.":["Socios Estratégicos",513,5,1,3,2025,864000,864000,"Dotaciones Industriales - Uniformes","CHALECO",""],"COOPERATIVA ANDINA ":["Socios Estratégicos",512,5,1,2,2025,624000,624000,"Dotaciones Industriales - Uniformes","CHALECO",""],"SERVICIOS OPTIMA E.S.P.":["Socios Estratégicos",522,5,2,2,2025,620000,620000,"Dotaciones Médicas y hospitalarias, Unif","CHALECO ANTI FLUIDOS","PROGRAMACION DE BORDADO"],"INTEGRAL CARIBE MINERA E.S.P.":["Clientes Corporativos Fieles",422,4,2,2,2025,366051,366051,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"AVANCE LOGISTICS S.A.S.":["Socios Estratégicos",521,5,2,1,2025,243000,243000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO","CAMISA EN OXFORD"],"OPERACIONES AVANCE LOGÍSTICA E.S.P.":["Clientes Corporativos Fieles",422,4,2,2,2025,354000,354000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"ORIENTE DYNAMICS S.A.S":["Socios Estratégicos",522,5,2,2,2025,588000,588000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"GRUPO ACTIVA S.A.S.":["Socios Estratégicos",513,5,1,3,2025,1490000,1490000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"GLOBAL NETWORKS E.S.P.":["Clientes Corporativos Fieles",421,4,2,1,2025,280000,280000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"SISTEMAS VERSA S.A.S.":["Clientes Corporativos Fieles",422,4,2,2,2025,840000,840000,"Dotaciones Médicas y hospitalarias, Unif","CAMIBUSO TIPO POLO",""],"STRATA PARTNERS LTDA.":["Clientes Corporativos Fieles",413,4,1,3,2025,1050000,1050000,"Prendas Publicitarias","CACHUCHAS",""],"AGROPECUARIA OPTIMA S.A.":["Clientes Corporativos Fieles",413,4,1,3,2025,980800,980800,"Prendas Publicitarias","BORDADO",""],"PROTEK CAPITAL S.A.":["Clientes Corporativos Fieles",421,4,2,1,2025,36000,36000,"Prendas Publicitarias","BORDADO",""],"INVERSIONES CAPITA LOGÍSTICA S.A.":["Socios Estratégicos",511,5,1,1,2025,10500,10500,"Prendas Publicitarias","BORDADO",""],"INTEGRAL CORDIAL E.S.P.":["Socios Estratégicos",511,5,1,1,2025,37500,37500,"Prendas Publicitarias","BORDADO",""],"OPERACIONES METRO S.A.":["Clientes Corporativos Fieles",413,4,1,3,2025,2298400,2298400,"Prendas Publicitarias","BORDADO",""],"SOLUCIONES DIGITALES PRAXIS LTDA.":["Socios Estratégicos",521,5,2,1,2026,123756,61878,"Prendas Publicitarias","BORDADO",""],"NACIONAL VITA ENERGÉTICA E.S.P.":["Socios Estratégicos",521,5,2,1,2026,181083,90542,"Prendas Publicitarias","BORDADO",""],"SABANA SOLUTIONS S.A.S.":["Socios Estratégicos",525,5,2,5,2025,12960000,12960000,"Prendas Publicitarias","MORRAL",""],"OPERADORA LLANO FOOD S.A.S.":["Socios Estratégicos",524,5,2,4,2026,4180000,4180000,"Dotaciones Industriales - Uniformes","KIT UNIFORME","CAMIBUSO TIPO POLO"],"AUTOMOTRIZ ALTA S.A.S.":["Socios Estratégicos",523,5,2,3,2026,1455000,1455000,"Dotaciones Administrativas Uniformes","CAMISA COMBINADA",""],"CORPORACIÓN NOVA COMERCIAL E.S.P.":["Socios Estratégicos",511,5,1,1,2026,30000,30000,"Prendas Publicitarias","BORDADO",""]};
+    fSetupAC();
+  },250);
+};
+
+})();
+</script>
+
+</body>
+</html>
