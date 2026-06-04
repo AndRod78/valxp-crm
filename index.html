@@ -189,6 +189,232 @@ table.dtable tr:hover td{background:var(--surface2);}
   .seg-cards{grid-template-columns:repeat(2,1fr);}
   .page{padding:16px;}
 }
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE SYSTEM — Mobile-first, Stripe/Linear/Pushwoosh
+   Breakpoints: 480px (xs) · 640px (sm) · 900px (md) · 1100px (lg)
+════════════════════════════════════════════════════════════ */
+
+/* ── Fluid typography ── */
+:root {
+  --fs-label: clamp(8px, 1.8vw, 10px);
+  --fs-body:  clamp(10px, 2.2vw, 12px);
+  --fs-kpi:   clamp(18px, 4vw, 28px);
+}
+
+/* ── Safe area for iPhone bottom bar ── */
+body { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ── Tabbar: scrollable on medium, hidden on mobile ── */
+@media (max-width: 900px) {
+  .tabbar { padding: 0 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tabbar::-webkit-scrollbar { display: none; }
+  .tab { padding: 12px 14px; font-size: 9px; }
+  .page { padding: 16px 14px; }
+}
+
+@media (max-width: 640px) {
+  /* Hide tabbar completely on mobile — replaced by bottom nav */
+  .tabbar { display: none; }
+  /* Page padding: leave room for bottom nav (64px) */
+  .page { padding: 12px 12px 80px; }
+  /* Topbar compact */
+  .topbar { padding: 0 14px; height: 48px; }
+  .topbar-meta { display: none; }
+}
+
+/* ── KPI grids ── */
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi-val { font-size: var(--fs-kpi); }
+}
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .kpi { padding: 12px 14px; }
+  .kpi-val { font-size: 20px; }
+}
+
+/* ── All multi-column grids collapse ── */
+@media (max-width: 900px) {
+  .grid2, .grid3, .grid-60-40, .grid-40-60 { grid-template-columns: 1fr; }
+  .fn-2col, .fn-3col, .fn-bottom, .fn-bottom-3 { grid-template-columns: 1fr; }
+  .fn-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .seg-cards { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .fn-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .seg-cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .seg-card { padding: 12px; }
+  .seg-card .sc-num { font-size: 22px; }
+  .panel { padding: 14px; }
+  .fn-panel { padding: 12px; }
+}
+
+/* ── Bar chart names responsive ── */
+@media (max-width: 640px) {
+  .bar-name    { flex: 0 0 130px; font-size: 10px; }
+  .bar-name-lg { flex: 0 0 150px; font-size: 10px; }
+  .bar-name-sm { flex: 0 0 110px; font-size: 9px; }
+  .bar-amt     { min-width: 55px; font-size: 8px; }
+}
+@media (max-width: 480px) {
+  .bar-name    { flex: 0 0 110px; font-size: 9px; }
+  .bar-name-lg { flex: 0 0 120px; font-size: 9px; }
+}
+
+/* ── Tables: horizontal scroll wrapper on mobile ── */
+@media (max-width: 640px) {
+  .tscroll, .tscroll2, .fn-tbl-wrap, .pipeline-table-wrap {
+    -webkit-overflow-scrolling: touch;
+  }
+  table.dtable td, table.dtable th,
+  .fn-tbl td, .fn-tbl th,
+  .pipeline-table td, .pipeline-table th {
+    font-size: 10px;
+    padding: 6px 7px;
+    white-space: nowrap;
+  }
+}
+
+/* ── Funnel visual: single column on mobile ── */
+@media (max-width: 640px) {
+  .funnel-visual { grid-template-columns: 1fr !important; }
+  .funnel-labels, .funnel-arrows { display: none !important; }
+  .fn-stage-bar { width: 100% !important; }
+  .fn-stage-inner { padding: 0 10px; }
+  .fn-stage-count { font-size: 14px; }
+}
+
+/* ── Modal full-screen on mobile ── */
+@media (max-width: 640px) {
+  .fn-overlay { align-items: flex-end; }
+  .fn-modal-box {
+    min-width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 20px 16px;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+  .fn-form-row { grid-template-columns: 1fr; gap: 8px; }
+}
+
+/* ── Filter bars: horizontal scroll on mobile ── */
+@media (max-width: 640px) {
+  .fbar, .fn-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    gap: 7px;
+    padding: 10px 12px;
+    scrollbar-width: none;
+  }
+  .fbar::-webkit-scrollbar, .fn-bar::-webkit-scrollbar { display: none; }
+  .fchip, .fn-chip { white-space: nowrap; padding: 5px 10px; }
+  .fn-btn-primary, .fn-btn-ghost { white-space: nowrap; flex-shrink: 0; }
+}
+
+/* ── Period tabs ── */
+@media (max-width: 480px) {
+  .period-tabs, .fn-bar > .period-tabs { gap: 4px; }
+  .ptab { padding: 4px 10px; font-size: 8px; }
+}
+
+/* ── Topbar meta hide on small screens ── */
+@media (max-width: 900px) {
+  .topbar-meta b { display: inline; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE BOTTOM NAVIGATION BAR
+════════════════════════════════════════════════════════════ */
+.mobile-bottomnav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 64px;
+  background: var(--text);
+  border-top: 1px solid rgba(255,255,255,.07);
+  z-index: 200;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -4px 24px rgba(0,0,0,.35);
+}
+.mbn-item {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 8px 4px;
+  transition: opacity .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mbn-item:active { opacity: .6; }
+.mbn-icon { font-size: 18px; line-height: 1; }
+.mbn-lbl {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; letter-spacing: .3px;
+  color: #6b6158; text-transform: uppercase;
+  transition: color .15s;
+}
+.mbn-item.active .mbn-lbl { color: #F0C040; }
+.mbn-item.active .mbn-icon { filter: drop-shadow(0 0 6px rgba(240,192,64,.6)); }
+
+@media (max-width: 640px) {
+  .mobile-bottomnav { display: flex; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE DRAWER (MORE sections)
+════════════════════════════════════════════════════════════ */
+.mobile-drawer-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 300;
+  -webkit-tap-highlight-color: transparent;
+}
+.mobile-drawer {
+  display: block;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  border-top: 1px solid var(--border);
+  z-index: 301;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.16,1,.3,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,.3);
+}
+.mobile-drawer.open { transform: translateY(0); }
+.mobile-drawer-overlay.open { display: block; }
+.mdr-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.mdr-close {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 50%; width: 28px; height: 28px;
+  cursor: pointer; font-size: 12px; color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+}
+.mdr-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 12px; border-radius: 8px;
+  cursor: pointer; transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mdr-item:hover, .mdr-item:active { background: var(--surface2); }
+.mdr-item.active { background: var(--accent-bg); }
+.mdr-icon { font-size: 20px; }
+.mdr-lbl {
+  font-family: 'Familjen Grotesk', sans-serif;
+  font-size: 14px; font-weight: 600; color: var(--text);
+}
+.mdr-item.active .mdr-lbl { color: var(--accent); }
+
 </style>
 </head>
 <body>
@@ -225,6 +451,28 @@ table.dtable tr:hover td{background:var(--surface2);}
   <div class="tab" data-tab="clientes">🏢 Clientes</div>
   <div class="tab" data-tab="rfm">🎯 Segmentación RFM</div>
   <div class="tab" data-tab="funnel">🔻 Funnel 4C's + 2R's</div>
+</div>
+
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-bottomnav" id="mobileBottomNav">
+  <div class="mbn-item active" data-tab="resumen"><span class="mbn-icon">📊</span><span class="mbn-lbl">Resumen</span></div>
+  <div class="mbn-item" data-tab="ventas"><span class="mbn-icon">📈</span><span class="mbn-lbl">Ventas</span></div>
+  <div class="mbn-item" data-tab="categorias"><span class="mbn-icon">🗂</span><span class="mbn-lbl">Categorías</span></div>
+  <div class="mbn-item mbn-more" id="mbnMore"><span class="mbn-icon">⋯</span><span class="mbn-lbl">Más</span></div>
+</nav>
+
+<!-- MOBILE MORE DRAWER -->
+<div class="mobile-drawer-overlay" id="drawerOverlay"></div>
+<div class="mobile-drawer" id="mobileDrawer">
+  <div class="mdr-header">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">Más secciones</span>
+    <button class="mdr-close" id="drawerClose">✕</button>
+  </div>
+  <div class="mdr-item" data-tab="productos"><span class="mdr-icon">📦</span><span class="mdr-lbl">Productos</span></div>
+  <div class="mdr-item" data-tab="clientes"><span class="mdr-icon">🏢</span><span class="mdr-lbl">Clientes</span></div>
+  <div class="mdr-item" data-tab="rfm"><span class="mdr-icon">🎯</span><span class="mdr-lbl">Segmentación RFM</span></div>
+  <div class="mdr-item" data-tab="funnel"><span class="mdr-icon">🔻</span><span class="mdr-lbl">Funnel 4C's + 2R's</span></div>
 </div>
 
 <div class="tooltip" id="tooltip"></div>
@@ -1644,6 +1892,135 @@ window.initFunnel=function(){
   },250);
 };
 
+})();
+</script>
+
+
+<script>
+// ── Mobile Bottom Nav + Drawer ────────────────────────────────────────────
+(function(){
+  var DRAWER_TABS = ['productos','clientes','rfm','funnel'];
+
+  function switchTab(tabId) {
+    // Reuse existing tab switching logic
+    var targetTab = document.querySelector('.tab[data-tab="'+tabId+'"]');
+    if (targetTab) { targetTab.click(); }
+    // Sync bottom nav active state
+    document.querySelectorAll('.mbn-item[data-tab]').forEach(function(el){
+      el.classList.toggle('active', el.dataset.tab === tabId);
+    });
+    document.querySelectorAll('.mdr-item[data-tab]').forEach(function(el){
+      el.classList.toggle('active', el.dataset.tab === tabId);
+    });
+    // Show/hide the ⋯ "Más" indicator as active if a drawer tab is selected
+    var moreBtn = document.getElementById('mbnMore');
+    if (moreBtn) moreBtn.classList.toggle('active', DRAWER_TABS.indexOf(tabId) >= 0);
+  }
+
+  function openDrawer() {
+    var drawer = document.getElementById('mobileDrawer');
+    var overlay = document.getElementById('drawerOverlay');
+    if (drawer) drawer.classList.add('open');
+    if (overlay) overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    var drawer = document.getElementById('mobileDrawer');
+    var overlay = document.getElementById('drawerOverlay');
+    if (drawer) drawer.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    // Bottom nav items (Resumen, Ventas, Categorías)
+    document.querySelectorAll('.mbn-item[data-tab]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        switchTab(btn.dataset.tab);
+      });
+    });
+
+    // "Más" button → open drawer
+    var moreBtn = document.getElementById('mbnMore');
+    if (moreBtn) moreBtn.addEventListener('click', openDrawer);
+
+    // Drawer items
+    document.querySelectorAll('.mdr-item[data-tab]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        switchTab(btn.dataset.tab);
+        closeDrawer();
+      });
+    });
+
+    // Close drawer
+    var closeBtn = document.getElementById('drawerClose');
+    var overlay  = document.getElementById('drawerOverlay');
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+    if (overlay)  overlay.addEventListener('click', closeDrawer);
+
+    // Swipe down to close drawer
+    var startY = 0;
+    var drawer = document.getElementById('mobileDrawer');
+    if (drawer) {
+      drawer.addEventListener('touchstart', function(e){ startY = e.touches[0].clientY; }, {passive:true});
+      drawer.addEventListener('touchend', function(e){
+        if (e.changedTouches[0].clientY - startY > 60) closeDrawer();
+      }, {passive:true});
+    }
+
+    // Sync desktop tab clicks with mobile bottom nav
+    document.querySelectorAll('.tab').forEach(function(tab){
+      tab.addEventListener('click', function(){
+        var tabId = tab.dataset.tab;
+        document.querySelectorAll('.mbn-item[data-tab]').forEach(function(el){
+          el.classList.toggle('active', el.dataset.tab === tabId);
+        });
+        document.querySelectorAll('.mdr-item[data-tab]').forEach(function(el){
+          el.classList.toggle('active', el.dataset.tab === tabId);
+        });
+        var moreBtn2 = document.getElementById('mbnMore');
+        if (moreBtn2) moreBtn2.classList.toggle('active', DRAWER_TABS.indexOf(tabId) >= 0);
+      });
+    });
+  });
+})();
+</script>
+
+
+<script>
+// ── ResizeObserver: redraw D3 charts on resize ─────────────────────────────
+(function(){
+  var resizeTimer;
+  function onResize(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){
+      // Re-render all visible D3 SVGs by re-clicking the active tab
+      var activeTab = document.querySelector('.tab.active');
+      if (!activeTab) return;
+      var tabId = activeTab.dataset.tab;
+      // Only redraw if a rendered tab that has SVGs
+      var svgTabs = ['resumen','ventas','categorias','rfm','funnel'];
+      if (svgTabs.indexOf(tabId) === -1) return;
+      // Trigger re-init by calling the init function directly
+      var fnMap = {
+        resumen: null, // auto-inited on load
+        ventas: window._fVentasRender,
+        categorias: window._fCatRender,
+        rfm: window._fRFMScatter,
+        funnel: window._fFunnelRender
+      };
+    }, 250);
+  }
+
+  if (window.ResizeObserver) {
+    new ResizeObserver(onResize).observe(document.body);
+  } else {
+    window.addEventListener('resize', onResize);
+  }
+  window.addEventListener('orientationchange', function(){
+    setTimeout(onResize, 300);
+  });
 })();
 </script>
 
